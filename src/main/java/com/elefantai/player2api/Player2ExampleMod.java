@@ -13,7 +13,6 @@ public class Player2ExampleMod
 
     public Player2ExampleMod()
     {
-        // Register this class to receive Forge events
         MinecraftForge.EVENT_BUS.register(this);
     }
 
@@ -22,11 +21,9 @@ public class Player2ExampleMod
     {
         final String message = event.getMessage().getString();
 
-
-        // Check if the message is exactly "aaa"
         if (message.equals("aaa"))
         {
-            // Respond with "bbb"
+
             event.getPlayer().sendSystemMessage(Component.literal("bbb"));
         }
     }
