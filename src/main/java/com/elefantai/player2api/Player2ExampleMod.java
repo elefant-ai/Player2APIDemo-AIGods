@@ -22,7 +22,6 @@ public class Player2ExampleMod {
     public Player2ExampleMod() {
         MinecraftForge.EVENT_BUS.register(this);
 
-        // Initial System Prompt
         JsonObject systemMessage = new JsonObject();
         systemMessage.addProperty("role", "system");
         systemMessage.addProperty("content", "You are an AI assistant in a Minecraft server. You can either execute a command (starting with '/') or send a chat message.");
@@ -47,16 +46,16 @@ public class Player2ExampleMod {
             String responseText = ChatCompletion.getResponse(conversationHistory);
             System.out.println("AAA GOT RESPONSE TEXT " + responseText);
             if (responseText.startsWith("/")) {
-                // If response starts with "/", it's a command
+
                 if (server != null) {
                     sendCommand(server, responseText.substring(1)); // Remove "/"
                 }
             } else {
-                // Otherwise, send as a chat message
+
                 sendChat(player, responseText);
             }
         } catch (Exception e) {
-            e.printStackTrace();  // Log the full error
+            e.printStackTrace();
             sendChat(player, "Error communicating with AI: " + e.getClass().getSimpleName() + " - " + e.getMessage());
         }
     }
