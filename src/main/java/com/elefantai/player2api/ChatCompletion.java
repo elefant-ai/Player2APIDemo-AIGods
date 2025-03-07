@@ -7,15 +7,14 @@ import com.google.gson.JsonParser;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.List;
 
 public class ChatCompletion {
     private static final String API_BASE_URL = "http://127.0.0.1:4315/v1/chat/completions";
 
-    public static String getResponse(List<JsonObject> conversationHistory) throws Exception {
+    public static String getResponse(ConversationHistory conversationHistory) throws Exception {
         JsonObject requestBody = new JsonObject();
         JsonArray messagesArray = new JsonArray();
-        for (JsonObject msg : conversationHistory) {
+        for (JsonObject msg : conversationHistory.getListJSON()) {
             messagesArray.add(msg);
         }
         requestBody.add("messages", messagesArray);
