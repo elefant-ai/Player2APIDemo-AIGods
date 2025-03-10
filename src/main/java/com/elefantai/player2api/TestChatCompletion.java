@@ -2,26 +2,42 @@ package com.elefantai.player2api;
 
 import com.google.gson.JsonObject;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class TestChatCompletion {
     public static void main(String[] args) {
         try {
-            ConversationHistory conversationHistory = new ConversationHistory("You are an agent that can either chat in minecraft, or execute minecraft commands. For a user's message, respond with either a command or a message. Respond with only `/commandname parameters` if want to execute a command. Example commands include (not limited to):" + "['/give <target> <item> [<count>]', '/gamemode <gamemode> [<target>]'  ]. For targets use either the player's name or @a for all, @r for random player, @p for nearest player. ");
+            ConversationHistory conversationHistory = new ConversationHistory(Player2ExampleMod.initialPrompt);
 
-            conversationHistory.addUserMessage("Give everyone diamonds!");
-            String response1 = ChatCompletion.getResponse(conversationHistory);
-            conversationHistory.addSystemMessage(response1);
-            System.out.println("AI Response 1: " + response1);
+            conversationHistory.addUserMessage("Use command '/give coal @a' ");
+            JsonObject response1 = ChatCompletion.getResponse(conversationHistory);
+            conversationHistory.addSystemMessage(response1.toString());
+            processResponse(response1, 1);
 
-            conversationHistory.addUserMessage("Do the same thing again!");
-            String response2 = ChatCompletion.getResponse(conversationHistory);
-            conversationHistory.addSystemMessage(response2);
-            System.out.println("AI Response 2: " + response2);
+            conversationHistory.addUserMessage("Use chat to say 'hello'");
+            JsonObject response2 = ChatCompletion.getResponse(conversationHistory);
+            conversationHistory.addSystemMessage(response2.toString());
+            processResponse(response2, 2);
+
+            conversationHistory.addUserMessage("Use chat to say 'hello again', also run command '/give diamond @a'");
+            JsonObject response3 = ChatCompletion.getResponse(conversationHistory);
+            conversationHistory.addSystemMessage(response3.toString());
+            processResponse(response3, 3);
+
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private static void processResponse(JsonObject response, int responseNumber) {
+        System.out.println("AI Response " + responseNumber + ": " + response.toString());
+        if (response.has("command")) {
+            String command = response.get("command").getAsString();
+            System.out.println("Executing Command: " + command);
+        }
+
+        if (response.has("chat")) {
+            String chatMessage = response.get("chat").getAsString();
+            System.out.println("Chatting: " + chatMessage);
         }
     }
 }

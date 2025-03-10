@@ -1,8 +1,6 @@
 package com.elefantai.player2api;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -11,7 +9,7 @@ import java.net.URL;
 public class ChatCompletion {
     private static final String API_BASE_URL = "http://127.0.0.1:4315/v1/chat/completions";
 
-    public static String getResponse(ConversationHistory conversationHistory) throws Exception {
+    public static JsonObject getResponse(ConversationHistory conversationHistory) throws Exception {
         JsonObject requestBody = new JsonObject();
         JsonArray messagesArray = new JsonArray();
         for (JsonObject msg : conversationHistory.getListJSON()) {
@@ -51,8 +49,13 @@ public class ChatCompletion {
 
         if (choices != null && !choices.isEmpty()) {
             JsonObject messageObject = choices.get(0).getAsJsonObject().getAsJsonObject("message");
+
             if (messageObject != null && messageObject.has("content")) {
-                return messageObject.get("content").getAsString();
+                String content = messageObject.get("content").getAsString();
+
+                content = content.replaceAll("^```json\\s*", "").replaceAll("\\s*```$", "").trim();
+
+                return JsonParser.parseString(content).getAsJsonObject();
             }
         }
 

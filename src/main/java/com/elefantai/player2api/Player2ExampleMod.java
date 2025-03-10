@@ -25,12 +25,16 @@ public class Player2ExampleMod {
     private ServerPlayer player = null;
     private MinecraftServer server = null;
 
+    public static String initialPrompt = "You are an AI assistant that always responds in JSON format. Your response must always be a JSON object containing at least one (or both) of the following fields:\n" +
+            "\n" +
+            "- \"chat\": A string containing a natural language response when the input is a question or conversational.\n" +
+            "- \"command\": A string containing a command when the input is an instruction or action request.";
+
+
     public Player2ExampleMod() {
         MinecraftForge.EVENT_BUS.register(this);
-        String initialPrompt =
-                "You are an AI assistant in a Minecraft server. You can either execute a command (starting with '/') or send a chat message.";
         conversationHistory = new ConversationHistory(initialPrompt);
-    }
+}
 
 
     @SubscribeEvent
@@ -53,15 +57,23 @@ public class Player2ExampleMod {
         conversationHistory.addUserMessage(message);
 
         try {
-            String responseText = ChatCompletion.getResponse(conversationHistory);
-            System.out.println("LLM Response: " + responseText);
-            conversationHistory.addSystemMessage(responseText);
+            JsonObject response = ChatCompletion.getResponse(conversationHistory);
+            String responseAsString = response.toString();
+            System.out.println("LLM Response: " + responseAsString);
+            conversationHistory.addSystemMessage(responseAsString);
 
-            // this will process the response text, if it starts with / then it is a command
-            if (responseText.startsWith("/") && server != null) {
-                sendCommand(responseText.trim());
-            } else {
-                sendChat(responseText.trim());
+            String command = response.has("command") ? response.get("command").getAsString() : null;
+
+            String chatMessage = response.has("chat") ? response.get("chat").getAsString() : null;
+
+            if (command != null) {
+                System.out.println("Command received: " + command);
+                sendCommand(command);
+            }
+
+            if (chatMessage != null) {
+                System.out.println("Chat response received: " + chatMessage);
+                sendChat(chatMessage);
             }
         } catch (Exception e) {
             e.printStackTrace();
