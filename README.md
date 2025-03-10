@@ -1,7 +1,6 @@
 
-# Player2ExamplMod
+# AI Gods Example Project
 
-Description to come.
 
 
 # Setup Process:
