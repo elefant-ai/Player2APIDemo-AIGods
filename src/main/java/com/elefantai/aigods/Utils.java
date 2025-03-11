@@ -16,6 +16,12 @@ public class Utils {
         return input;
     }
 
+    public static String getStringJsonSafely(JsonObject input, String fieldName) {
+        return (input.has(fieldName) && !input.get(fieldName).isJsonNull())
+                ? input.get(fieldName).getAsString()
+                : null;
+    }
+
     /**
      * Removes Markdown-style code block formatting (```json ... ```) and parses the JSON.
      *

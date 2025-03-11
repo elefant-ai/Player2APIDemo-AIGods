@@ -1,5 +1,6 @@
 package com.elefantai.aigods;
 
+import net.minecraft.Util;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -8,11 +9,13 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
 
 import com.google.gson.JsonObject;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 
 @Mod(Player2ExampleMod.MODID)
@@ -22,6 +25,7 @@ public class Player2ExampleMod {
     // These will be set after the first chat message:
     private ServerPlayer player = null;
     private MinecraftServer server = null;
+    private ConversationHistory conversationHistory = null;
 
     public static String initialPrompt =
             """
@@ -41,7 +45,7 @@ public class Player2ExampleMod {
             God will receive a message from user.
             
             Response Format:
-            Respond with JSON containing message, op command and reason. All of these are strings.
+            Always respond with JSON containing message, op command and reason. All of these are strings.
             {
               "reason": "Look at the recent conversations and command history to decide what the god should say and do. Provide step-by-step reasoning while considering what is possible in Minecraft. ",
               "command": "Decide the best way to achieve the god's goals using the available op commands in Minecraft. If the god decides it should not use any command, generate an empty command `""`",
@@ -76,10 +80,18 @@ public class Player2ExampleMod {
         if(characterDescription.isEmpty()){
            characterDescription = "You are a helpful AI god.";
         }
-
+        String newPrompt = Utils.replacePlaceholders(initialPrompt, Map.of("characterDescription", characterDescription));
+        if(this.conversationHistory == null){
+            this.conversationHistory = new ConversationHistory(newPrompt);
+        }
+        else{
+            this.conversationHistory.setBaseSystemPrompt(newPrompt);
+        }
         // Create conversation history with updated character description
-        return new ConversationHistory(Utils.replacePlaceholders(initialPrompt, Map.of("characterDescription", characterDescription)));
+        return this.conversationHistory;
     }
+
+
 
     @SubscribeEvent
     public void onPlayerChat(ServerChatEvent event) {
@@ -94,18 +106,6 @@ public class Player2ExampleMod {
 
         System.out.println("Received message: " + message);
 
-        if (message.equals("a")) {
-            try {
-                List<JsonObject> characters = Player2APIService.getSelectedCharacters();
-                for (JsonObject character : characters) {
-                    System.out.println(character);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return;
-        }
-
         // Get dynamic conversation history
         ConversationHistory conversationHistory = getConversationHistory();
         conversationHistory.addUserMessage(message);
@@ -116,13 +116,9 @@ public class Player2ExampleMod {
             System.out.println("LLM Response: " + responseAsString);
             conversationHistory.addSystemMessage(responseAsString);
 
-            String command = (response.has("command") && !response.get("command").isJsonNull())
-                    ? response.get("command").getAsString()
-                    : null;
+            String command = Utils.getStringJsonSafely(response, "command");
 
-            String chatMessage = (response.has("message") && !response.get("message").isJsonNull())
-                    ? response.get("message").getAsString()
-                    : null;
+            String chatMessage = Utils.getStringJsonSafely(response, "message");
 
             if (command != null) {
                 System.out.println("Command received: " + command);
@@ -140,6 +136,28 @@ public class Player2ExampleMod {
         }
     }
 
+    @SubscribeEvent
+    public void onPlayerLoggedInEvent(PlayerLoggedInEvent event) {
+        if(event.getEntity() instanceof ServerPlayer) {
+            this.player = (ServerPlayer) event.getEntity();
+            String greetInstructions = String.format("The user's username is '%s'. Please greet the user.", player.getName().getString());
+            this.getConversationHistory().addSystemMessage(greetInstructions);
+            try {
+                System.out.printf("Greeting with instructions: '%s' ", greetInstructions);
+                JsonObject response = Player2APIService.completeConversation(this.getConversationHistory());
+                String responseAsString = response.toString();
+                System.out.println("LLM Response to onLogInPrompt: " + responseAsString);
+
+                String chatMessage = Utils.getStringJsonSafely(response, "message");
+                sendChat(chatMessage);
+
+            }
+            catch (Exception e){
+                System.err.println("Error while trying to fetch initial chat greeting. " + e.getMessage());
+            }
+        }
+    }
+
     private void sendCommand(String command) {
         System.out.println("Sending command: " + command);
         if (this.server == null) {
@@ -153,10 +171,14 @@ public class Player2ExampleMod {
 
     private void sendChat(String message) {
         System.out.println("Sending chat message: " + message);
-        if (this.player == null) {
-            System.err.println("Player is empty");
-            return;
+        try {
+            sendCommand("/say " + message);
+        } catch (Exception e) {
+            if (this.player == null) {
+                System.err.println("Player is empty");
+                return;
+            }
+            this.player.sendSystemMessage(Component.literal(message));
         }
-        this.player.sendSystemMessage(Component.literal(message));
     }
 }
