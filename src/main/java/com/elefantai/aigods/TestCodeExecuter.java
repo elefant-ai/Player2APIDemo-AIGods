@@ -1,4 +1,4 @@
-package com.elefantai.player2api;
+package com.elefantai.aigods;
 
 public class TestCodeExecuter {
     // to test, run this:

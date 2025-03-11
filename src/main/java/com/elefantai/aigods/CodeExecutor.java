@@ -1,4 +1,4 @@
-package com.elefantai.player2api;
+package com.elefantai.aigods;
 
 import javax.tools.*;
 import java.io.*;
@@ -45,7 +45,7 @@ public class CodeExecutor {
         }
 
         URLClassLoader classLoader = URLClassLoader.newInstance(new URL[]{classOutputDir.toURI().toURL()});
-        Class<?> dynamicClass = Class.forName("com.elefantai.player2api.DynamicClass", true, classLoader);
+        Class<?> dynamicClass = Class.forName("com.elefantai.aigods.DynamicClass", true, classLoader);
 
         Method executeMethod = dynamicClass.getMethod("execute");
         executeMethod.setAccessible(true);  // BYPASSES ACCESS RESTRICTIONS

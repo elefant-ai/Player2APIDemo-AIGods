@@ -1,4 +1,4 @@
-package com.elefantai.player2api;
+package com.elefantai.aigods;
 
 import com.google.gson.JsonObject;
 
@@ -8,17 +8,17 @@ public class TestChatCompletion {
             ConversationHistory conversationHistory = new ConversationHistory(Player2ExampleMod.initialPrompt);
 
             conversationHistory.addUserMessage("Use command '/give coal @a' ");
-            JsonObject response1 = ChatCompletion.getResponse(conversationHistory);
+            JsonObject response1 = Player2APIService.completeConversation(conversationHistory);
             conversationHistory.addSystemMessage(response1.toString());
             processResponse(response1, 1);
 
             conversationHistory.addUserMessage("Use chat to say 'hello'");
-            JsonObject response2 = ChatCompletion.getResponse(conversationHistory);
+            JsonObject response2 = Player2APIService.completeConversation(conversationHistory);
             conversationHistory.addSystemMessage(response2.toString());
             processResponse(response2, 2);
 
             conversationHistory.addUserMessage("Use chat to say 'hello again', also run command '/give diamond @a'");
-            JsonObject response3 = ChatCompletion.getResponse(conversationHistory);
+            JsonObject response3 = Player2APIService.completeConversation(conversationHistory);
             conversationHistory.addSystemMessage(response3.toString());
             processResponse(response3, 3);
 

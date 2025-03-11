@@ -1,4 +1,4 @@
-package com.elefantai.player2api;
+package com.elefantai.aigods;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
