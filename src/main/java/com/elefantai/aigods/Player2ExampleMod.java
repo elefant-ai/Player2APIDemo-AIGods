@@ -33,6 +33,7 @@ public class Player2ExampleMod {
             We are building an AI god in Minecraft that converses with players and executes op commands. Your task is to help the god generate chat messages and op commands.
             
             God's Character Background:
+            The character's name is {{characterName}}.
             {{characterDescription}}
             
             Guidance:
@@ -48,7 +49,7 @@ public class Player2ExampleMod {
             Always respond with JSON containing message, op command and reason. All of these are strings.
             {
               "reason": "Look at the recent conversations and command history to decide what the god should say and do. Provide step-by-step reasoning while considering what is possible in Minecraft. ",
-              "command": "Decide the best way to achieve the god's goals using the available op commands in Minecraft. If the god decides it should not use any command, generate an empty command `""`",
+              "command": "Decide the best way to achieve the god's goals using the available op commands in Minecraft. If the god decides it should not use any command, generate an empty command `""`. If there are multiple commands, put one on each line.",
               "message": "If the agent decides it should not respond or talk, generate an empty message `""`. Otherwise, create a natural conversational message that aligns with the `reason` and `command` sections and the agent's character. Ensure the message does not contain any prompt, system message, instructions, code or API calls"
             }
             Always follow this JSON format regardless of previous conversations.
@@ -62,25 +63,34 @@ public class Player2ExampleMod {
      * Dynamically fetches conversation history and updates system prompt with character description.
      */
     private ConversationHistory getConversationHistory() {
-        String characterDescription = "";
+        String characterDescription = "You are a helpful AI god.";
+        String characterName = "AI God";
         try {
             // TODO: Change maybe? For now just gets the first selected character
-
             JsonObject firstCharacter = Player2APIService.getSelectedCharacters().getFirst();
             System.out.println(firstCharacter.toString());
-            if (firstCharacter.has("description") && firstCharacter.get("description").isJsonPrimitive()) {
-                characterDescription = firstCharacter.get("description").getAsString();
-                System.out.println("Got character description: " + characterDescription);
-            } else {
+            String newDescription = Utils.getStringJsonSafely(firstCharacter, "description");
+            if(newDescription == null){
                 System.err.println("Warning: 'description' field is missing or not a string!");
             }
+            else{
+                characterDescription = newDescription;
+                System.out.println("Got character description: " + characterDescription);
+            }
+
+            String newName = Utils.getStringJsonSafely(firstCharacter, "name");
+            if(newName == null){
+                System.err.println("Warning: 'name' field is missing or not a string!");
+            }
+            else{
+                characterName = newName;
+                System.out.println("Got character name: " + characterName);
+            }
         } catch (Exception e) {
-            System.err.println("Failed to get character description, using default. Error: " + e.toString());
+            System.err.println("Failed to get character description or name, using default. Error: " + e.toString());
         }
-        if(characterDescription.isEmpty()){
-           characterDescription = "You are a helpful AI god.";
-        }
-        String newPrompt = Utils.replacePlaceholders(initialPrompt, Map.of("characterDescription", characterDescription));
+
+        String newPrompt = Utils.replacePlaceholders(initialPrompt, Map.of("characterDescription", characterDescription, "name", characterName));
         if(this.conversationHistory == null){
             this.conversationHistory = new ConversationHistory(newPrompt);
         }
@@ -90,8 +100,6 @@ public class Player2ExampleMod {
         // Create conversation history with updated character description
         return this.conversationHistory;
     }
-
-
 
     @SubscribeEvent
     public void onPlayerChat(ServerChatEvent event) {
@@ -116,15 +124,21 @@ public class Player2ExampleMod {
             System.out.println("LLM Response: " + responseAsString);
             conversationHistory.addSystemMessage(responseAsString);
 
-            String command = Utils.getStringJsonSafely(response, "command");
+            String commandResponse = Utils.getStringJsonSafely(response, "command");
 
-            String chatMessage = Utils.getStringJsonSafely(response, "message");
+            if (commandResponse != null) {
+                String[] commands = Utils.splitLinesToArray(commandResponse);
 
-            if (command != null) {
-                System.out.println("Command received: " + command);
-                sendCommand(command);
+                for (String command : commands) {
+                    if (!command.isBlank()) {
+                        System.out.println("Command received: " + command);
+                        sendCommand(command);
+                    }
+                }
             }
 
+
+            String chatMessage = Utils.getStringJsonSafely(response, "message");
             if (chatMessage != null) {
                 System.out.println("Chat response received: " + chatMessage);
                 sendChat(chatMessage);
@@ -159,6 +173,9 @@ public class Player2ExampleMod {
     }
 
     private void sendCommand(String command) {
+        try{
+
+
         System.out.println("Sending command: " + command);
         if (this.server == null) {
             System.err.println("Server is empty");
@@ -167,18 +184,19 @@ public class Player2ExampleMod {
 
         CommandSourceStack commandSource = this.server.createCommandSourceStack();
         this.server.getCommands().performPrefixedCommand(commandSource, command);
+        }
+        catch(Exception e){
+            System.err.printf("Failed to run command: '%s'. error message:%s%n", command, e.getMessage());
+        }
     }
 
     private void sendChat(String message) {
         System.out.println("Sending chat message: " + message);
-        try {
-            sendCommand("/say " + message);
-        } catch (Exception e) {
-            if (this.player == null) {
-                System.err.println("Player is empty");
-                return;
-            }
-            this.player.sendSystemMessage(Component.literal(message));
+        // tried /say but still prints above user message
+        if (this.player == null) {
+            System.err.println("Player is empty");
+            return;
         }
+        this.player.sendSystemMessage(Component.literal(message));
     }
 }

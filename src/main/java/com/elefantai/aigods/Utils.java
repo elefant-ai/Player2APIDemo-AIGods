@@ -35,4 +35,12 @@ public class Utils {
         return JsonParser.parseString(content).getAsJsonObject();
     }
 
+
+    public static String[] splitLinesToArray(String input) {
+        if (input == null || input.isEmpty()) {
+            return new String[0];
+        }
+        return input.split("\\R+"); // \\R is any of: (\n, \r, \r\n)
+    }
+
 }
