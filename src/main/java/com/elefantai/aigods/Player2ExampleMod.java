@@ -90,7 +90,7 @@ public class Player2ExampleMod {
             System.err.println("Failed to get character description or name, using default. Error: " + e.toString());
         }
 
-        String newPrompt = Utils.replacePlaceholders(initialPrompt, Map.of("characterDescription", characterDescription, "name", characterName));
+        String newPrompt = Utils.replacePlaceholders(initialPrompt, Map.of("characterDescription", characterDescription, "characterName", characterName));
         if(this.conversationHistory == null){
             this.conversationHistory = new ConversationHistory(newPrompt);
         }
@@ -164,7 +164,6 @@ public class Player2ExampleMod {
 
                 String chatMessage = Utils.getStringJsonSafely(response, "message");
                 sendChat(chatMessage);
-
             }
             catch (Exception e){
                 System.err.println("Error while trying to fetch initial chat greeting. " + e.getMessage());
@@ -192,7 +191,7 @@ public class Player2ExampleMod {
 
     private void sendChat(String message) {
         System.out.println("Sending chat message: " + message);
-        // tried /say but still prints above user message
+        // tried sendCommand(/say ...) but still prints above user message
         if (this.player == null) {
             System.err.println("Player is empty");
             return;
