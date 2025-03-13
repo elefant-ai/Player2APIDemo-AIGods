@@ -1,15 +1,14 @@
 
 # Player 2 API Demo (AIGods)
 
-This is a minecraft forge mod to demo the Payer2 API. 
+This is a Minecraft Forge mod to demo the Payer2 API. 
 
 **Important Note:** To use this mod (either as a developer or a user), you must have the [Player 2 app](https://player2.game/) open and running.
 
 
 
 ### What does this mod do
-This mod allows the currently selected character from the Player2 app to execute commands and chat in the game Minecraft, as an "AI God" that can execute server commands, and chat to the user. As soon as you get into a game, 
-
+This mod allows the currently selected character from the Player2 app to act as an "AI God" that can execute commands and chat to the user in the game Minecraft.
 
 
 
