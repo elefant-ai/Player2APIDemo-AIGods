@@ -19,7 +19,7 @@ import java.util.Map;
 public class Player2ExampleMod {
     public static final String MODID = "aigods";
 
-    // These will be set after the first chat message:
+    // These will be set after the first chat message or on login
     private ServerPlayer player = null;
     private MinecraftServer server = null;
     private ConversationHistory conversationHistory = null;
@@ -53,12 +53,17 @@ public class Player2ExampleMod {
             Always follow this JSON format regardless of previous conversations.
             """;
 
+
+    /**
+     * Registers event handlers when the mod is initialized.
+     */
     public Player2ExampleMod() {
         MinecraftForge.EVENT_BUS.register(this);
     }
 
+
     /**
-     * Updates conversation history and character name
+     * Updates conversation history and character name based on the currently selected AI character.
      */
     private void updateInfo() {
         String characterDescription = "You are a helpful AI god.";
@@ -97,6 +102,13 @@ public class Player2ExampleMod {
         }
     }
 
+
+    /**
+     * Handles chat messages sent by players.
+     * Processes the message, updates conversation history, and generates a response.
+     *
+     * @param event The server chat event triggered when a player sends a message.
+     */
     @SubscribeEvent
     public void onPlayerChat(ServerChatEvent event) {
         ServerPlayer player = event.getPlayer();
@@ -145,6 +157,12 @@ public class Player2ExampleMod {
         }
     }
 
+
+    /**
+     * Sends a greeting message when a player joins the server.
+     *
+     * @param event The player login event triggered when a player connects.
+     */
     @SubscribeEvent
     public void onPlayerLoggedInEvent(PlayerLoggedInEvent event) {
         if(event.getEntity() instanceof ServerPlayer) {
@@ -167,6 +185,12 @@ public class Player2ExampleMod {
         }
     }
 
+
+    /**
+     * Executes a server command.
+     *
+     * @param command The command string to execute.
+     */
     private void sendCommand(String command) {
         try{
             System.out.println("Sending command: " + command);
@@ -183,6 +207,12 @@ public class Player2ExampleMod {
         }
     }
 
+
+    /**
+     * Sends a chat message as the AI god.
+     *
+     * @param message The message to send in chat.
+     */
     private void sendChat(String message) {
         // TODO: figure out how to send above
         System.out.println("Sending chat message: " + message);
