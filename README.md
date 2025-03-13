@@ -51,7 +51,7 @@ build.gradle. For the latest license text, refer to the mapping file itself, or 
 https://github.com/MinecraftForge/MCPConfig/blob/master/Mojang.md
 
 # Additional Resources: 
-
+Elefant AI discord: https://elefant.gg/discord
 Community Documentation: https://docs.minecraftforge.net/en/latest/gettingstarted/
 LexManos' Install Video: https://youtu.be/8VEdtQLuLO0
 Forge Forums: https://forums.minecraftforge.net/
