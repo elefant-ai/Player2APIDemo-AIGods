@@ -1,6 +1,5 @@
 package com.elefantai.aigods;
 
-import net.minecraft.Util;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -13,9 +12,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
 
 import com.google.gson.JsonObject;
 
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 
 @Mod(Player2ExampleMod.MODID)
@@ -26,6 +23,7 @@ public class Player2ExampleMod {
     private ServerPlayer player = null;
     private MinecraftServer server = null;
     private ConversationHistory conversationHistory = null;
+    private String characterName = "AI God";
 
     public static String initialPrompt =
             """
@@ -60,15 +58,15 @@ public class Player2ExampleMod {
     }
 
     /**
-     * Dynamically fetches conversation history and updates system prompt with character description.
+     * Updates conversation history and character name
      */
-    private ConversationHistory getConversationHistory() {
+    private void updateInfo() {
         String characterDescription = "You are a helpful AI god.";
-        String characterName = "AI God";
         try {
             // TODO: Change maybe? For now just gets the first selected character
             JsonObject firstCharacter = Player2APIService.getSelectedCharacters().getFirst();
             System.out.println(firstCharacter.toString());
+
             String newDescription = Utils.getStringJsonSafely(firstCharacter, "description");
             if(newDescription == null){
                 System.err.println("Warning: 'description' field is missing or not a string!");
@@ -78,9 +76,9 @@ public class Player2ExampleMod {
                 System.out.println("Got character description: " + characterDescription);
             }
 
-            String newName = Utils.getStringJsonSafely(firstCharacter, "name");
+            String newName = Utils.getStringJsonSafely(firstCharacter, "short_name");
             if(newName == null){
-                System.err.println("Warning: 'name' field is missing or not a string!");
+                System.err.println("Warning: 'short_name' field is missing or not a string!");
             }
             else{
                 characterName = newName;
@@ -97,8 +95,6 @@ public class Player2ExampleMod {
         else{
             this.conversationHistory.setBaseSystemPrompt(newPrompt);
         }
-        // Create conversation history with updated character description
-        return this.conversationHistory;
     }
 
     @SubscribeEvent
@@ -115,7 +111,7 @@ public class Player2ExampleMod {
         System.out.println("Received message: " + message);
 
         // Get dynamic conversation history
-        ConversationHistory conversationHistory = getConversationHistory();
+        updateInfo();
         conversationHistory.addUserMessage(message);
 
         try {
@@ -137,7 +133,6 @@ public class Player2ExampleMod {
                 }
             }
 
-
             String chatMessage = Utils.getStringJsonSafely(response, "message");
             if (chatMessage != null) {
                 System.out.println("Chat response received: " + chatMessage);
@@ -155,10 +150,11 @@ public class Player2ExampleMod {
         if(event.getEntity() instanceof ServerPlayer) {
             this.player = (ServerPlayer) event.getEntity();
             String greetInstructions = String.format("The user's username is '%s'. Please greet the user.", player.getName().getString());
-            this.getConversationHistory().addSystemMessage(greetInstructions);
+            updateInfo();
+            conversationHistory.addSystemMessage(greetInstructions);
             try {
                 System.out.printf("Greeting with instructions: '%s' ", greetInstructions);
-                JsonObject response = Player2APIService.completeConversation(this.getConversationHistory());
+                JsonObject response = Player2APIService.completeConversation(conversationHistory);
                 String responseAsString = response.toString();
                 System.out.println("LLM Response to onLogInPrompt: " + responseAsString);
 
@@ -173,29 +169,28 @@ public class Player2ExampleMod {
 
     private void sendCommand(String command) {
         try{
+            System.out.println("Sending command: " + command);
+            if (this.server == null) {
+                System.err.println("Server is empty");
+                return;
+            }
 
-
-        System.out.println("Sending command: " + command);
-        if (this.server == null) {
-            System.err.println("Server is empty");
-            return;
-        }
-
-        CommandSourceStack commandSource = this.server.createCommandSourceStack();
-        this.server.getCommands().performPrefixedCommand(commandSource, command);
-        }
-        catch(Exception e){
-            System.err.printf("Failed to run command: '%s'. error message:%s%n", command, e.getMessage());
+            CommandSourceStack commandSource = this.server.createCommandSourceStack();
+            this.server.getCommands().performPrefixedCommand(commandSource, command);
+            }
+            catch(Exception e){
+                System.err.printf("Failed to run command: '%s'. error message:%s%n", command, e.getMessage());
         }
     }
 
     private void sendChat(String message) {
+        // TODO: figure out how to send above
         System.out.println("Sending chat message: " + message);
         // tried sendCommand(/say ...) but still prints above user message
         if (this.player == null) {
             System.err.println("Player is empty");
             return;
         }
-        this.player.sendSystemMessage(Component.literal(message));
+        this.player.sendSystemMessage(Component.literal(String.format("<%s>%s", characterName, message)));
     }
 }

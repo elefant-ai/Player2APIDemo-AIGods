@@ -15,7 +15,7 @@ public class Player2APIService {
     private static final String BASE_URL = "http://127.0.0.1:4315";
 
     /**
-     * Send request to the Player 2 API, and output a map for the response.
+     * Handles boilerplate logic for interacting with the API endpoint
      *
      * @param endpoint The API endpoint (e.g., "/v1/chat/completions").
      * @param postRequest True -> POST request, False -> GET request
