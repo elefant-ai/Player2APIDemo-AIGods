@@ -1,20 +1,44 @@
 
-# AI Gods Example Project
+# Player 2 API Demo (AIGods)
+
+This is a minecraft forge mod to demo the Payer2 API. 
+
+**Important Note:** To use this mod (either as a developer or a user), you must have the [Player 2 app](https://player2.game/) open and running.
+
+
+
+### What does this mod do
+This mod allows the currently selected character from the Player2 app to execute commands and chat in the game Minecraft, as an "AI God" that can execute server commands, and chat to the user. As soon as you get into a game, 
+
+
+
+
+
+
 
 # If you just want the mod:
+### Step 1
+Make sure you have the [Player 2 app](https://player2.game/) installed.
+### Step 2
+Download and install [forge](https://files.minecraftforge.net/net/minecraftforge/forge/).
+### Step 3
+Download the latest release of the mod (.jar file) [here](https://github.com/elefant-ai/Player2APIDemo-AIGods/releases).
+### Step 4
+Then install via forge (drag into .mincraft/mods)
+### Step 5
+Run the Player2 app, then open minecraft. Open a singleplayer world, and the character should greet you with a message. Simply type in chat, and the character will respond with either chat messages, commands, or both.
 
-visit https://github.com/elefant-ai/Player2APIDemo-AIGods/tags
-
-# If you want to build the mod yourself from code:
-
-
-### Step 1: 
-Make sure you have some JDK installed. On windows we tested with OpenJDK21.
+# Development Setup:
+### Step 1:
+Make sure you have the [Player 2 app](https://player2.game/) installed.
 
 ### Step 2: 
-Extract the zip folder into a folder, then change directory into that folder.
+Make sure you have some JDK installed. On windows we tested with OpenJDK21.
 
 ### Step 3: 
+Extract the zip folder into a folder, then change directory into that folder.
+
+### Step 4: 
 Depends on what IDE you wish to use:
 
 IntelliJ:
@@ -32,8 +56,14 @@ If at any point you are missing libraries in your IDE, or you've run into proble
 run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
 (this does not affect your code) and then start the process again.
 
-### Step 4: 
+### Step 5:
+Before running the game, make sure the Player2 app is open.
+
+### Step 6: 
 To run the game, either in IntelliJ or Eclipse, open up the Gradle tab, then under `Tasks/forgegradle runs` there should be a gradle option for `runClient`. Simply click that and minecraft should open.
+
+## API Docs
+Once the Player2 app is running, the docs can be found by opening [localhost:4315/docs](localhost:4315/docs) on any web browser.
 
 
 
