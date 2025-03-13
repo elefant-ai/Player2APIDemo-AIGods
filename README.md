@@ -1,9 +1,11 @@
 
 # AI Gods Example Project
 
+# If you just want the mod:
 
+visit https://github.com/elefant-ai/Player2APIDemo-AIGods/tags
 
-# Setup Process:
+# If you want to build the mod yourself from code:
 
 
 ### Step 1: 
