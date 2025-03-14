@@ -17,6 +17,9 @@ public class ConversationHistory {
         objectToAdd.addProperty("role", "user");
         objectToAdd.addProperty("content", userText);
         conversationHistory.add(objectToAdd);
+        if (conversationHistory.size() > 100) {
+            conversationHistory.removeFirst();
+        }
     }
 
     /**
