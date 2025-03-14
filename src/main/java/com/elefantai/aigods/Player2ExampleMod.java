@@ -221,6 +221,6 @@ public class Player2ExampleMod {
             System.err.println("Player is empty");
             return;
         }
-        this.player.sendSystemMessage(Component.literal(String.format("<%s>%s", characterName, message)));
+        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s", characterName, message)));
     }
 }
