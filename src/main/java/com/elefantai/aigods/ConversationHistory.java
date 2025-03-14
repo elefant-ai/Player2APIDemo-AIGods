@@ -56,6 +56,19 @@ public class ConversationHistory {
         addHistory(objectToAdd);
     }
 
+
+    /**
+     * Adds a new assistant message at the end of the conversation history.
+     *
+     * @param messageText The system message to add.
+     */
+    public void addAssistantMessage(String messageText){
+        JsonObject objectToAdd = new JsonObject();
+        objectToAdd.addProperty("role", "assistant");
+        objectToAdd.addProperty("content", messageText);
+        addHistory(objectToAdd);
+    }
+
     public List<JsonObject> getListJSON() {
         return conversationHistory;
     }

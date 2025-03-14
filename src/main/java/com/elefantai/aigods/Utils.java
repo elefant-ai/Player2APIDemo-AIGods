@@ -1,9 +1,9 @@
 package com.elefantai.aigods;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class Utils {
@@ -36,6 +36,52 @@ public class Utils {
                 ? input.get(fieldName).getAsString()
                 : null;
     }
+    /**
+     * Converts a JSON array of strings into a Java String[] array.
+     *
+     * @param jsonArray The input JSON array.
+     * @return A Java String[] array containing the values. Skips non-string elements.
+     */
+    public static String[] jsonArrayToStringArray(JsonArray jsonArray) {
+        if (jsonArray == null) {
+            return new String[0];
+        }
+
+        List<String> stringList = new ArrayList<>();
+        for (JsonElement element : jsonArray) {
+            if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+                stringList.add(element.getAsString());
+            } else {
+                System.err.println("Warning: Skipping non-string element in JSON array: " + element);
+            }
+        }
+        return stringList.toArray(new String[0]);
+    }
+
+    /**
+     * Safely retrieves a string array from a JsonObject.
+     * Returns null if the field does not exist, is null, or is not a valid JSON array of strings.
+     *
+     * @param input The JsonObject to extract the field from.
+     * @param fieldName The name of the field to retrieve.
+     * @return A String[] array containing the values, or null if the field is missing or invalid.
+     */
+    public static String[] getStringArrayJsonSafely(JsonObject input, String fieldName) {
+        if (!input.has(fieldName) || input.get(fieldName).isJsonNull()) {
+            return null;
+        }
+
+        JsonElement element = input.get(fieldName);
+        if (!element.isJsonArray()) {
+            System.err.println("Warning: Expected a JSON array for field '" + fieldName + "', but found a different type.");
+            return null;
+        }
+
+        JsonArray jsonArray = element.getAsJsonArray();
+        return jsonArrayToStringArray(jsonArray);
+    }
+
+
 
     /**
      * Removes Markdown-style code block formatting (```json ... ```) and parses the JSON.

@@ -7,9 +7,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class Player2APIService {
@@ -24,7 +22,7 @@ public class Player2APIService {
      * @return A map containing JSON keys and values from the response.
      * @throws Exception If there is an error.
      */
-    public static Map<String, JsonElement> sendRequest(String endpoint, boolean postRequest, JsonObject requestBody) throws Exception {
+    private static Map<String, JsonElement> sendRequest(String endpoint, boolean postRequest, JsonObject requestBody) throws Exception {
         URL url = new URI(BASE_URL + endpoint).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod(postRequest ? "POST" : "GET");
@@ -90,7 +88,7 @@ public class Player2APIService {
 
                 if (messageObject != null && messageObject.has("content")) {
                     String content = messageObject.get("content").getAsString();
-                    conversationHistory.addSystemMessage(content);
+                    conversationHistory.addAssistantMessage(content);
                     return Utils.parseCleanedJson(content);
                 }
             }
@@ -100,30 +98,81 @@ public class Player2APIService {
     }
 
     /**
-     * Fetches selected characters from the API.
+     * Fetches the first selected character from the API and returns it as a Character object.
      *
-     * @return A list of JsonObjects, each containing character details (id, name, description, meta).
-     * @throws Exception If there is an error.
+     * @return A Character object containing the character's details.
      */
-    public static List<JsonObject> getSelectedCharacters() throws Exception {
-        Map<String, JsonElement> responseMap = sendRequest("/v1/selected_characters", false, null);
+    public static Character getSelectedCharacter() {
+        // TODO: Maybe update later? this just takes the top character.
+        try {
+            Map<String, JsonElement> responseMap = sendRequest("/v1/selected_characters", false, null);
 
-        List<JsonObject> characterList = new ArrayList<>();
-
-        if (responseMap.containsKey("characters")) {
-            JsonArray charactersArray = responseMap.get("characters").getAsJsonArray();
-
-            for (JsonElement element : charactersArray) {
-                if (element.isJsonObject()) {
-                    characterList.add(element.getAsJsonObject());
-                } else {
-                    System.err.println("Skipping non-object character: " + element);
-                }
+            if (!responseMap.containsKey("characters")) {
+                throw new Exception("No characters found in API response.");
             }
-        }
+            JsonArray charactersArray = responseMap.get("characters").getAsJsonArray();
+            if (charactersArray.isEmpty()) {
+                throw new Exception("Character list is empty.");
+            }
 
-        return characterList;
+            JsonObject firstCharacter = charactersArray.get(0).getAsJsonObject();
+
+            String name = Utils.getStringJsonSafely(firstCharacter, "short_name");
+            if (name == null) {
+                throw new Exception("Character is missing 'short_name'.");
+            }
+
+            String greeting = Utils.getStringJsonSafely(firstCharacter, "greeting");
+            String description = Utils.getStringJsonSafely(firstCharacter, "description");
+            String[] voiceIds = Utils.getStringArrayJsonSafely(firstCharacter, "voice_ids");
+            return new Character(name, greeting, description, voiceIds);
+        } catch (Exception e) {
+            System.err.println("Warning, getSelectedCharacter failed, reverting to default. Error message: " + e.getMessage());
+            return new Character("AI god", "Greetings", "You are a helpful AI God", new String [0]);
+        }
     }
 
 
+    public static void textToSpeech(String message, Character character){
+        try {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("play_in_app", true);
+            requestBody.addProperty("speed", 1);
+            requestBody.addProperty("text", message );
+            JsonArray voiceIdsArray = new JsonArray();
+            for (String voiceId : character.voiceIds) {
+                voiceIdsArray.add(voiceId);
+            }
+            requestBody.add("voice_ids", voiceIdsArray);
+
+            sendRequest("/v1/tts/speak", true, requestBody);
+
+        } catch (Exception ignored) {
+        }
+    }
+
+    public static void startSTT(){
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("timeout", 30);
+        try {
+            sendRequest("/v1/stt/start", true, requestBody);
+        } catch (Exception e) {
+            System.err.println("Error in startSST: " + e.getMessage());
+        }
+    }
+
+
+    // todo: Add comment
+    public static String stopSTT () {
+        try{
+            Map<String, JsonElement> responseMap = sendRequest("/v1/stt/stop", true, null);
+            if(!responseMap.containsKey("message")){
+                throw new Exception("Could not find messages in response");
+            }
+            return responseMap.get("message").getAsString();
+        } catch (Exception e) {
+            // handle timeout err here?
+            return e.getMessage();
+        }
+    }
 }

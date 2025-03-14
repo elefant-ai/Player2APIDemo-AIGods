@@ -23,7 +23,8 @@ public class Player2ExampleMod {
     private ServerPlayer player = null;
     private MinecraftServer server = null;
     private ConversationHistory conversationHistory = null;
-    private String characterName = "AI God";
+    private Character character = null;
+    private Boolean shouldSpeak = true;
 
     public static String initialPrompt =
             """
@@ -63,45 +64,41 @@ public class Player2ExampleMod {
 
 
     /**
-     * Updates conversation history and character name based on the currently selected AI character.
+     * Updates this. (conversationHistory, character) based on the currently selected character.
      */
     private void updateInfo() {
-        String characterDescription = "You are a helpful AI god.";
-        try {
-            // TODO: Change maybe? For now just gets the first selected character
-            JsonObject firstCharacter = Player2APIService.getSelectedCharacters().getFirst();
-            System.out.println(firstCharacter.toString());
+        Character newCharacter = Player2APIService.getSelectedCharacter();
+        System.out.println(newCharacter);
+        this.character = newCharacter;
 
-            String newDescription = Utils.getStringJsonSafely(firstCharacter, "description");
-            if(newDescription == null){
-                System.err.println("Warning: 'description' field is missing or not a string!");
-            }
-            else{
-                characterDescription = newDescription;
-                System.out.println("Got character description: " + characterDescription);
-            }
+        String newPrompt = Utils.replacePlaceholders(initialPrompt, Map.of("characterDescription", character.description, "characterName", character.name));
 
-            String newName = Utils.getStringJsonSafely(firstCharacter, "short_name");
-            if(newName == null){
-                System.err.println("Warning: 'short_name' field is missing or not a string!");
-            }
-            else{
-                characterName = newName;
-                System.out.println("Got character name: " + characterName);
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to get character description or name, using default. Error: " + e.toString());
-        }
-
-        String newPrompt = Utils.replacePlaceholders(initialPrompt, Map.of("characterDescription", characterDescription, "characterName", characterName));
-        if(this.conversationHistory == null){
+        if (this.conversationHistory == null) {
             this.conversationHistory = new ConversationHistory(newPrompt);
-        }
-        else{
+        } else {
             this.conversationHistory.setBaseSystemPrompt(newPrompt);
         }
     }
 
+    public void processModCommand(String command){
+        switch (command){
+            case "tts":
+                shouldSpeak = !shouldSpeak;
+                if(!shouldSpeak){
+                    sendSystemMessage("Turning off text to speech");
+                }
+                else{
+                    sendSystemMessage("Turning on text to speech");
+                }
+                break;
+            case "help":
+                sendSystemMessage("Commands:");
+                sendSystemMessage("'!tts' : toggles text-to-speech");
+                break;
+            default:
+                sendSystemMessage("Unknown command. Type !help for all commands");
+        }
+    }
 
     /**
      * Handles chat messages sent by players.
@@ -115,6 +112,7 @@ public class Player2ExampleMod {
         this.player = player;
         final String message = event.getMessage().getString();
         MinecraftServer server = player.getServer();
+
         if (server != null) {
             System.out.println("Setting Server");
             this.server = server;
@@ -122,7 +120,17 @@ public class Player2ExampleMod {
 
         System.out.println("Received message: " + message);
 
+
+        if (!message.isEmpty() && message.charAt(0) == '!') {
+            processModCommand(message.substring(1)); // remove '!' and process the command
+            event.setCanceled(true); // prevent the chat message from being sent
+            return;
+        }
+
+        // shows player's message
+        System.out.println("Sending player message");
         this.player.sendSystemMessage(Component.literal(String.format("<%s> %s",  this.player.getName().getString(), event.getMessage().getString())));
+
         // Get dynamic conversation history
         updateInfo();
         conversationHistory.addUserMessage(message);
@@ -131,13 +139,11 @@ public class Player2ExampleMod {
             JsonObject response = Player2APIService.completeConversation(conversationHistory);
             String responseAsString = response.toString();
             System.out.println("LLM Response: " + responseAsString);
-            conversationHistory.addSystemMessage(responseAsString);
 
             String commandResponse = Utils.getStringJsonSafely(response, "command");
 
             if (commandResponse != null) {
                 String[] commands = Utils.splitLinesToArray(commandResponse);
-
                 for (String command : commands) {
                     if (!command.isBlank()) {
                         System.out.println("Command received: " + command);
@@ -149,19 +155,19 @@ public class Player2ExampleMod {
             String chatMessage = Utils.getStringJsonSafely(response, "message");
             if (chatMessage != null) {
                 System.out.println("Chat response received: " + chatMessage);
-                sendChat(chatMessage);
+                processAIChatMessage(chatMessage);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            sendChat("Error communicating with AI: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            processAIChatMessage("Error communicating with AI: " + e.getClass().getSimpleName() + " - " + e.getMessage());
         }
         event.setCanceled(true);
     }
 
 
     /**
-     * Sends a greeting message when a player joins the server.
+     * Sends a greeting message when a player joins the server, also updates info and sets player.
      *
      * @param event The player login event triggered when a player connects.
      */
@@ -169,22 +175,8 @@ public class Player2ExampleMod {
     public void onPlayerLoggedInEvent(PlayerLoggedInEvent event) {
         if(event.getEntity() instanceof ServerPlayer) {
             this.player = (ServerPlayer) event.getEntity();
-            String greetInstructions = String.format("The user's username is '%s'. Please greet the user.", player.getName().getString());
             updateInfo();
-            conversationHistory.addSystemMessage(greetInstructions);
-            try {
-                System.out.printf("Greeting with instructions: '%s' ", greetInstructions);
-                JsonObject response = Player2APIService.completeConversation(conversationHistory);
-                String responseAsString = response.toString();
-                System.out.println("LLM Response to onLogInPrompt: " + responseAsString);
-
-                String chatMessage = Utils.getStringJsonSafely(response, "message");
-                sendChat(chatMessage);
-            }
-            catch (Exception e){
-                //this.server.sendSystemMessage(Component.literal("§cError while trying to fetch initial chat greeting. " + e.getMessage()));
-                System.err.println("Error while trying to fetch initial chat greeting. " + e.getMessage());
-            }
+            processAIChatMessage(this.character.greetingInfo);
         }
     }
 
@@ -201,29 +193,47 @@ public class Player2ExampleMod {
                 System.err.println("Server is empty");
                 return;
             }
-
             CommandSourceStack commandSource = this.server.createCommandSourceStack();
             this.server.getCommands().performPrefixedCommand(commandSource, command);
-            }
-            catch(Exception e){
-                System.err.printf("Failed to run command: '%s'. error message:%s%n", command, e.getMessage());
+        }
+        catch(Exception e){
+            System.err.printf("Failed to run command: '%s'. error message:%s%n", command, e.getMessage());
         }
     }
 
 
     /**
-     * Sends a chat message as the AI god.
+     * Sends a chat message as the character.
      *
      * @param message The message to send in chat.
      */
-    private void sendChat(String message) {
-        // TODO: figure out how to send above
-        System.out.println("Sending chat message: " + message);
+    private void processAIChatMessage(String message) {
+        // TODO: figure out how to send above text instead of below.
+
+        System.out.println("Processing AI Chat Response: " + message);
         // tried sendCommand(/say ...) but still prints above user message
         if (this.player == null) {
             System.err.println("Player is empty");
             return;
         }
-        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s", characterName, message)));
+        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s", this.character.name, message)));
+        if(shouldSpeak){
+            Player2APIService.textToSpeech(message, character);
+        }
+
+    }
+    /**
+     * Sends a chat message as INFO.
+     *
+     * @param message The message to send in chat.
+     */
+    private void sendSystemMessage(String message){
+        System.out.println("Sending system message");
+
+        if(this.player == null){
+            System.err.println("Player is empty");
+            return;
+        }
+        this.player.sendSystemMessage(Component.literal(String.format("INFO: %s", message)));
     }
 }
