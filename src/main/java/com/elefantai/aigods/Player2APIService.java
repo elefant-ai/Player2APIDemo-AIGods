@@ -4,6 +4,7 @@ import com.google.gson.*;
 
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public class Player2APIService {
      * @throws Exception If there is an error.
      */
     public static Map<String, JsonElement> sendRequest(String endpoint, boolean postRequest, JsonObject requestBody) throws Exception {
-        URL url = new URL(BASE_URL + endpoint);
+        URL url = new URI(BASE_URL + endpoint).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod(postRequest ? "POST" : "GET");
 
