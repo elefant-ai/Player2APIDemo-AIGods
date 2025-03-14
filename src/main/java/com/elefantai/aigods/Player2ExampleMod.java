@@ -122,6 +122,7 @@ public class Player2ExampleMod {
 
         System.out.println("Received message: " + message);
 
+        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s",  this.player.getName().getString(), event.getMessage().getString())));
         // Get dynamic conversation history
         updateInfo();
         conversationHistory.addUserMessage(message);
@@ -155,6 +156,7 @@ public class Player2ExampleMod {
             e.printStackTrace();
             sendChat("Error communicating with AI: " + e.getClass().getSimpleName() + " - " + e.getMessage());
         }
+        event.setCanceled(true);
     }
 
 
@@ -180,6 +182,7 @@ public class Player2ExampleMod {
                 sendChat(chatMessage);
             }
             catch (Exception e){
+                //this.server.sendSystemMessage(Component.literal("§cError while trying to fetch initial chat greeting. " + e.getMessage()));
                 System.err.println("Error while trying to fetch initial chat greeting. " + e.getMessage());
             }
         }
