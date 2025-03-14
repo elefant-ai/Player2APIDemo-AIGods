@@ -11,8 +11,8 @@ out
 *.ipr
 *.iws
 *.iml
-.idea
-
+.idea/*
+!.idea/runConfigurations/
 # gradle
 build
 .gradle
