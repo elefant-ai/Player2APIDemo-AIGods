@@ -1,5 +1,7 @@
 package com.elefantai.aigods;
 
+import com.elefantai.aigods.network.PacketHandler;
+import com.elefantai.aigods.network.SSendTTSPacket;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -12,14 +14,16 @@ public class KeyInputHandler {
     @SubscribeEvent
     public static void onKeyInput(InputEvent.Key event) {
         boolean isKeyPressed = KeyBindings.STTKey.isDown(); // Check if key is currently pressed
+
         if (isKeyPressed && !wasSTTKeyPressed) {
-            System.out.println("STT START");
-            //Player2APIService.startSTT();
+            System.out.println("CLIENT: Sending start TTS to server");
+            PacketHandler.sendToServer(new SSendTTSPacket(true));
+
         } else if (!isKeyPressed && wasSTTKeyPressed) {
-            System.out.println("STT STOP");
-            // String out = Player2APIService.stopSTT();
-            // System.out.println(out);
+            System.out.println("CLIENT: Sending stop STT to server");
+            PacketHandler.sendToServer(new SSendTTSPacket(false));
         }
+
         wasSTTKeyPressed = isKeyPressed;
     }
 }
