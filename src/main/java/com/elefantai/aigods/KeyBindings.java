@@ -15,8 +15,10 @@ public class KeyBindings {
 
     // Create a key binding. Change the key description and category as needed.
     public static final KeyMapping STTKey = new KeyMapping(
-            "AI God's STT Key", // keybinding's name
-            GLFW.GLFW_KEY_V,      // default key (V)
+            "AI God's STT Key", // keybinding's name in game
+            GLFW.GLFW_KEY_X, // default key (X)
+                             // NOTE: V will not work (for now) as our launcher binds V already,
+                             // so you will get an internal server error
             "key.categories.misc" // category in the controls menu
     );
 

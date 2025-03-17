@@ -1,6 +1,7 @@
 package com.elefantai.aigods.network;
 
 import com.elefantai.aigods.Player2APIService;
+import com.elefantai.aigods.Player2ExampleMod;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -37,7 +38,14 @@ public class SSendTTSPacket {
         }
         else{
             System.out.println("STOPPING STT");
-            System.out.printf("Result: '%s'%n", Player2APIService.stopSTT());
+            final String sttResult = Player2APIService.stopSTT();
+            System.out.printf("STT Result: '%s'%n", sttResult);
+            if(sttResult.isEmpty()){
+                Player2ExampleMod.instance.processPlayerMessage("Could not hear user message");
+            }
+            else{
+                Player2ExampleMod.instance.processPlayerMessage(sttResult);
+            }
         }
     }
 

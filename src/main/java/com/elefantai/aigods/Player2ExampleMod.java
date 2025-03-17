@@ -25,6 +25,7 @@ public class Player2ExampleMod {
     private ConversationHistory conversationHistory = null;
     private Character character = null;
     private Boolean shouldSpeak = true;
+    public static Player2ExampleMod instance; // hack for single instance
 
     public static String initialPrompt =
             """
@@ -66,6 +67,7 @@ public class Player2ExampleMod {
      */
     public Player2ExampleMod() {
         MinecraftForge.EVENT_BUS.register(this);
+        instance = this;
     }
 
 
@@ -131,18 +133,20 @@ public class Player2ExampleMod {
             System.out.println("Setting Server");
             this.server = server;
         }
-
+        processPlayerMessage(message);
+        event.setCanceled(true); // prevent the chat message from being sent
+    }
+    public void processPlayerMessage(String message){
         System.out.println("Player location: X=" + player.getX() + ", Y=" + player.getY() + ", Z=" + player.getZ());
 
         if (!message.isEmpty() && message.charAt(0) == '!') {
             processModCommand(message.substring(1)); // remove '!' and process the command
-            event.setCanceled(true); // prevent the chat message from being sent
             return;
         }
 
         // shows player's message
         System.out.println("Sending player message");
-        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s",  this.player.getName().getString(), event.getMessage().getString())));
+        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s",  this.player.getName().getString(), message)));
 
         // Get dynamic conversation history
         updateInfo();
@@ -177,7 +181,6 @@ public class Player2ExampleMod {
             e.printStackTrace();
             processAIChatMessage("Error communicating with AI: " + e.getClass().getSimpleName() + " - " + e.getMessage());
         }
-        event.setCanceled(true);
     }
 
 
