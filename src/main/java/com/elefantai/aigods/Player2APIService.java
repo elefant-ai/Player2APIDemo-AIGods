@@ -11,7 +11,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Player2APIService {
-    private static final String BASE_URL = "http://127.0.0.1:4315";
+    private static final String BASE_URL = "http://127.0.0.1:4315"; // ACTUAL
+//    private static final String BASE_URL = "http://127.0.0.1:8080"; // PROXY
+
 
     /**
      * Handles boilerplate logic for interacting with the API endpoint
@@ -30,14 +32,18 @@ public class Player2APIService {
         connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
         connection.setRequestProperty("accept", "application/json; charset=utf-8");
 
+        System.out.printf("Sending %s request to %s\n", postRequest? "POST":"GET", endpoint);
+
+
         if (postRequest && requestBody != null) {
-            System.out.println("Sending post request to " + endpoint + ": " +  requestBody.toString());
+            System.out.printf("Request Body: %s\n", requestBody);
             connection.setDoOutput(true);
             try (OutputStream os = connection.getOutputStream()) {
                 byte[] input = requestBody.toString().getBytes(StandardCharsets.UTF_8);
                 os.write(input, 0, input.length);
             }
         }
+
 
 
         int responseCode = connection.getResponseCode();
@@ -73,6 +79,7 @@ public class Player2APIService {
         for (Map.Entry<String, JsonElement> entry : jsonResponse.entrySet()) {
             responseMap.put(entry.getKey(), entry.getValue());
         }
+        System.out.printf("DONE %s request to %s \n", postRequest? "POST":"GET", endpoint);
 
         return responseMap;
     }

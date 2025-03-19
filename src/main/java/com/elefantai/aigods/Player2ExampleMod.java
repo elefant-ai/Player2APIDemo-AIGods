@@ -195,6 +195,12 @@ public class Player2ExampleMod {
             this.player = (ServerPlayer) event.getEntity();
             updateInfo();
             processAIChatMessage(this.character.greetingInfo);
+            MinecraftServer server = player.getServer();
+
+            if (server != null) {
+                System.out.println("Setting Server");
+                this.server = server;
+            }
         }
     }
 
