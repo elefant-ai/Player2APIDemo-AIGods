@@ -13,8 +13,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Player2APIService {
-//    private static final String BASE_URL = "http://127.0.0.1:4315"; // ACTUAL
-    private static final String BASE_URL = "http://127.0.0.1:8080"; // PROXY
+    private static final String BASE_URL = "http://127.0.0.1:4315"; // ACTUAL
+//    private static final String BASE_URL = "http://127.0.0.1:8080"; // PROXY
 
 
     /**
