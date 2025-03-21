@@ -1,18 +1,17 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<component>
-  <configuration default="false" factoryName="Application" name="runClient" singleton="false" type="Application">
-    <option name="MAIN_CLASS_NAME" value="net.minecraftforge.bootstrap.ForgeBootstrap"/>
-    <option name="VM_PARAMETERS" value="-Dforge.logging.console.level=debug -Dforge.logging.markers=REGISTRIES -Dforge.enabledGameTestNamespaces=aigods -Dforge.enableGameTest=true -Djava.net.preferIPv6Addresses=system"/>
-    <option name="PROGRAM_PARAMETERS" value="--launchTarget forge_userdev_client --version MOD_DEV --assetIndex 5 --assetsDir /home/brynte/.gradle/caches/forge_gradle/assets --gameDir ."/>
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run"/>
-    <module name="Player2APIDemo-AIGods.main"/>
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="runClient" type="Application" factoryName="Application" singleton="true">
     <envs>
-      <env name="MOD_CLASSES" value="$PROJECT_DIR$/build/sourcesSets/main"/>
-      <env name="MCP_MAPPINGS" value="parchment_2024.11.17-1.21.1"/>
+      <env name="MOD_CLASSES" value="$PROJECT_DIR$/build/sourcesSets/main" />
+      <env name="MCP_MAPPINGS" value="parchment_2024.11.17-1.21.1" />
     </envs>
+    <option name="MAIN_CLASS_NAME" value="net.minecraftforge.bootstrap.ForgeBootstrap" />
+    <module name="Player2APIDemo-AIGods.main" />
+    <option name="PROGRAM_PARAMETERS" value="--launchTarget forge_userdev_client --version MOD_DEV --assetIndex 5 --assetsDir $USER_HOME$/.gradle/caches/forge_gradle/assets --gameDir ." />
+    <option name="VM_PARAMETERS" value="-Dforge.logging.console.level=debug -Dforge.logging.markers=REGISTRIES -Dforge.enabledGameTestNamespaces=aigods -Dforge.enableGameTest=true -Djava.net.preferIPv6Addresses=system" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run" />
     <method v="2">
-      <option enabled="true" name="Make"/>
-      <option enabled="true" externalProjectPath="$PROJECT_DIR$" name="Gradle.BeforeRunTask" tasks=":prepareRunClientCompile"/>
+      <option name="Make" enabled="true" />
+      <option name="Gradle.BeforeRunTask" enabled="true" tasks=":prepareRunClientCompile" externalProjectPath="$PROJECT_DIR$" />
     </method>
   </configuration>
 </component>

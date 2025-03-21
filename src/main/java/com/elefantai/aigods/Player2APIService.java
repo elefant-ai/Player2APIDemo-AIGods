@@ -9,8 +9,11 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Player2APIService {
+    private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private static final String BASE_URL = "http://127.0.0.1:4315"; // ACTUAL
 //    private static final String BASE_URL = "http://127.0.0.1:8080"; // PROXY
 
@@ -175,27 +178,31 @@ public class Player2APIService {
     }
 
     public static void startSTT(){
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("timeout", 30);
-        try {
-            sendRequest("/v1/stt/start", true, requestBody);
-        } catch (Exception e) {
-            System.err.println("Error in startSST: " + e.getMessage());
-        }
+        executorService.submit(() -> {
+            try {
+                JsonObject requestBody = new JsonObject();
+                requestBody.addProperty("timeout", 30);
+                sendRequest("/v1/stt/start", true, requestBody);
+            } catch (Exception e) {
+                System.err.println("Error in startSST: " + e.getMessage());
+            }
+        });
+
     }
 
 
     // todo: Add comment
-    public static String stopSTT () {
-        try{
-            Map<String, JsonElement> responseMap = sendRequest("/v1/stt/stop", true, null);
-            if(!responseMap.containsKey("text")){
-                throw new Exception("Could not find key 'text' in response");
+    public static String stopSTT() {
+            try{
+                Map<String, JsonElement> responseMap = sendRequest("/v1/stt/stop", true, null);
+                if(!responseMap.containsKey("text")){
+                    throw new Exception("Could not find key 'text' in response");
+                }
+                System.out.println("STT Result: " + responseMap.toString());
+                return responseMap.get("text").getAsString();
+            } catch (Exception e) {
+                // handle timeout err here?
+                return e.getMessage();
             }
-            return responseMap.get("text").getAsString();
-        } catch (Exception e) {
-            // handle timeout err here?
-            return e.getMessage();
-        }
     }
 }
