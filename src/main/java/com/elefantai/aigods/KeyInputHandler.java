@@ -13,7 +13,7 @@ public class KeyInputHandler {
 
     @SubscribeEvent
     public static void onKeyInput(InputEvent.Key event) {
-        boolean isKeyPressed = KeyBindings.STTKey.isDown(); // Check if key is currently pressed
+        boolean isKeyPressed = KeyBindings.STTKey.get().isDown(); // Check if key is currently pressed
 
         if (isKeyPressed && !wasSTTKeyPressed) {
             System.out.println("CLIENT: Sending start TTS to server");

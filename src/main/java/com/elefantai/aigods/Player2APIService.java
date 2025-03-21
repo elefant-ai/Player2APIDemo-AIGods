@@ -9,10 +9,12 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Player2APIService {
-    private static final String BASE_URL = "http://127.0.0.1:4315"; // ACTUAL
-//    private static final String BASE_URL = "http://127.0.0.1:8080"; // PROXY
+//    private static final String BASE_URL = "http://127.0.0.1:4315"; // ACTUAL
+    private static final String BASE_URL = "http://127.0.0.1:8080"; // PROXY
 
 
     /**
@@ -25,6 +27,7 @@ public class Player2APIService {
      * @throws Exception If there is an error.
      */
     private static Map<String, JsonElement> sendRequest(String endpoint, boolean postRequest, JsonObject requestBody) throws Exception {
+
         URL url = new URI(BASE_URL + endpoint).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod(postRequest ? "POST" : "GET");
@@ -177,6 +180,7 @@ public class Player2APIService {
     public static void startSTT(){
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("timeout", 30);
+
         try {
             sendRequest("/v1/stt/start", true, requestBody);
         } catch (Exception e) {

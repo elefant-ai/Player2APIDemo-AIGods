@@ -7,9 +7,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.network.CustomPayloadEvent;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class SSendTTSPacket {
     // register any data to send here as fields (as long as it is byte-convertible)
     private boolean isPressed;
+    public static final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     public SSendTTSPacket(boolean isPressed){
         this.isPressed = isPressed;
@@ -33,19 +37,23 @@ public class SSendTTSPacket {
         System.out.println("SERVER: " + player.getName() + "SENT KEY PRESS " + isPressed);
 
         if(isPressed){
-            System.out.println("STARTING STT");
-            Player2APIService.startSTT();
+            executorService.submit(() -> {
+                System.out.println("STARTING STT");
+                Player2APIService.startSTT();
+            });
         }
         else{
-            System.out.println("STOPPING STT");
-            final String sttResult = Player2APIService.stopSTT();
-            System.out.printf("STT Result: '%s'%n", sttResult);
-            if(sttResult.isEmpty()){
-                Player2ExampleMod.instance.processPlayerMessage("Could not hear user message");
-            }
-            else{
-                Player2ExampleMod.instance.processPlayerMessage(sttResult);
-            }
+            executorService.submit(() ->{
+                System.out.println("STOPPING STT");
+                final String sttResult = Player2APIService.stopSTT();
+                System.out.printf("STT Result: '%s'%n", sttResult);
+                if(sttResult.isEmpty()){
+                    Player2ExampleMod.instance.processPlayerMessage("Could not hear user message");
+                }
+                else{
+                    Player2ExampleMod.instance.processPlayerMessage(sttResult);
+                }
+            });
         }
     }
 
