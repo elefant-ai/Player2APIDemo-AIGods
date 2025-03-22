@@ -33,7 +33,7 @@ public class SSendTTSPacket {
         }
         ServerPlayer player = context.getSender();
         assert player != null;
-        player.sendSystemMessage(Component.literal("KEY CHANGE"));
+        //player.sendSystemMessage(Component.literal("KEY CHANGE"));
         System.out.println("SERVER: " + player.getName() + "SENT KEY PRESS " + isPressed);
 
         if(isPressed){

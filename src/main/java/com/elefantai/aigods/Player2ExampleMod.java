@@ -102,6 +102,8 @@ public class Player2ExampleMod {
             case "help":
                 sendSystemMessage("Commands:");
                 sendSystemMessage("'!tts' : toggles text-to-speech");
+                sendSystemMessage("'!start' : Starts listening for microphone speech-to-text");
+                sendSystemMessage("'!stop' : Stops listening for microphone speech-to-text");
                 break;
             case "start":
                 System.out.println("Start STT");
@@ -109,7 +111,9 @@ public class Player2ExampleMod {
                 break;
             case "stop":
                 System.out.println("STOP STT");
+                String result = Player2APIService.stopSTT();
                 System.out.printf("Result: '%s'%n", Player2APIService.stopSTT());
+                processPlayerMessage(result);
                 break;
             default:
                 sendSystemMessage("Unknown command. Type !help for all commands");
