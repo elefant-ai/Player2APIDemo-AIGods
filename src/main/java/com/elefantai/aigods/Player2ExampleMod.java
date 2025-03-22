@@ -25,6 +25,7 @@ public class Player2ExampleMod {
     private ConversationHistory conversationHistory = null;
     private Character character = null;
     private Boolean shouldSpeak = true;
+    public static Player2ExampleMod instance; // hack for single instance
 
     public static String initialPrompt =
             """
@@ -41,8 +42,14 @@ public class Player2ExampleMod {
             Command execution:
             When asked, the agent can do anything that op commands in Minecraft allow. Examples: "gamemode creative @a", "give Player_Name diamond 4"
             
+            For teleport commands, instead of using relative tp commands, use the player's position provided. 
+            
             Request Format:
-            God will receive a message from user.
+            God will receive a message from user, as a stringified JSON of the form:
+            {
+                "message" : string // the message that the user sends
+                "playerStatus" : string // metadata relating to the player's position and current dimension
+            }
             
             Response Format:
             Always respond with JSON containing message, op command and reason. All of these are strings.
@@ -60,6 +67,7 @@ public class Player2ExampleMod {
      */
     public Player2ExampleMod() {
         MinecraftForge.EVENT_BUS.register(this);
+        instance = this;
     }
 
 
@@ -94,6 +102,18 @@ public class Player2ExampleMod {
             case "help":
                 sendSystemMessage("Commands:");
                 sendSystemMessage("'!tts' : toggles text-to-speech");
+                sendSystemMessage("'!start' : Starts listening for microphone speech-to-text");
+                sendSystemMessage("'!stop' : Stops listening for microphone speech-to-text");
+                break;
+            case "start":
+                System.out.println("Start STT");
+                Player2APIService.startSTT();
+                break;
+            case "stop":
+                System.out.println("STOP STT");
+                String result = Player2APIService.stopSTT();
+                System.out.printf("Result: '%s'%n", Player2APIService.stopSTT());
+                processPlayerMessage(result);
                 break;
             default:
                 sendSystemMessage("Unknown command. Type !help for all commands");
@@ -117,23 +137,26 @@ public class Player2ExampleMod {
             System.out.println("Setting Server");
             this.server = server;
         }
-
-        System.out.println("Received message: " + message);
-
+        processPlayerMessage(message);
+        event.setCanceled(true); // prevent the chat message from being sent
+    }
+    public void processPlayerMessage(String message){
+        System.out.println("Player location: X=" + player.getX() + ", Y=" + player.getY() + ", Z=" + player.getZ());
 
         if (!message.isEmpty() && message.charAt(0) == '!') {
             processModCommand(message.substring(1)); // remove '!' and process the command
-            event.setCanceled(true); // prevent the chat message from being sent
             return;
         }
 
         // shows player's message
         System.out.println("Sending player message");
-        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s",  this.player.getName().getString(), event.getMessage().getString())));
+        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s",  this.player.getName().getString(), message)));
 
         // Get dynamic conversation history
         updateInfo();
-        conversationHistory.addUserMessage(message);
+        String processedMessage = processUserMessage(message);
+        System.out.println("Processed message: " + processedMessage);
+        conversationHistory.addUserMessage(processedMessage);
 
         try {
             JsonObject response = Player2APIService.completeConversation(conversationHistory);
@@ -162,7 +185,6 @@ public class Player2ExampleMod {
             e.printStackTrace();
             processAIChatMessage("Error communicating with AI: " + e.getClass().getSimpleName() + " - " + e.getMessage());
         }
-        event.setCanceled(true);
     }
 
 
@@ -177,6 +199,12 @@ public class Player2ExampleMod {
             this.player = (ServerPlayer) event.getEntity();
             updateInfo();
             processAIChatMessage(this.character.greetingInfo);
+            MinecraftServer server = player.getServer();
+
+            if (server != null) {
+                System.out.println("Setting Server");
+                this.server = server;
+            }
         }
     }
 
@@ -236,4 +264,23 @@ public class Player2ExampleMod {
         }
         this.player.sendSystemMessage(Component.literal(String.format("INFO: %s", message)));
     }
+
+    private String processUserMessage(String message) {
+        JsonObject json = new JsonObject();
+        json.addProperty("message", message);
+
+        if (this.player != null) {
+            String dimension = this.player.level().dimension().location().toString(); // Get dimension as string
+            // int because otherwise tp doesnt work properly
+
+            json.addProperty("playerStatus", String.format("Player name is '%s' and is at (%d, %d, %d) in %s", player.getName().getString(),
+                    (int) player.getX(), (int) player.getY(), (int) player.getZ(), dimension));
+        } else {
+            json.addProperty("playerStatus", ""); // Blank if player is null
+        }
+        return json.toString();
+    }
+
+
+
 }
