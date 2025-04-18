@@ -9,8 +9,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class Player2APIService {
     private static final String BASE_URL = "http://127.0.0.1:4315"; // ACTUAL
@@ -27,7 +25,6 @@ public class Player2APIService {
      * @throws Exception If there is an error.
      */
     private static Map<String, JsonElement> sendRequest(String endpoint, boolean postRequest, JsonObject requestBody) throws Exception {
-
         URL url = new URI(BASE_URL + endpoint).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod(postRequest ? "POST" : "GET");
@@ -114,7 +111,6 @@ public class Player2APIService {
 
                 if (messageObject != null && messageObject.has("content")) {
                     String content = messageObject.get("content").getAsString();
-                    conversationHistory.addAssistantMessage(content);
                     return Utils.parseCleanedJson(content);
                 }
             }
