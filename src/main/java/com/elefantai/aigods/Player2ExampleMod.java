@@ -134,13 +134,12 @@ public class Player2ExampleMod {
     public void onPlayerLoggedInEvent(PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer) {
             this.player = (ServerPlayer) event.getEntity();
-            // this.character.greetingInfo
             MinecraftServer server = player.getServer();
             if (server != null) {
                 System.out.println("Setting Server");
                 Player2ExampleMod.server = server;
             }
-            ClientServiceThreaded.processPlayerMessage(instance, "Greet the user");
+            ClientServiceThreaded.sendGreeting(instance);
 
         }
     }

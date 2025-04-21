@@ -41,8 +41,30 @@ public class ClientServiceThreaded {
                 }, IO_POOL);
     }
 
+    public static void sendGreeting(Player2ExampleMod mod) {
+        updateNewCharacter(mod)
+                .thenAcceptAsync(newChar -> {
+                    String greeting = newChar.greetingInfo;
+                    if (greeting == null || greeting.isEmpty()) {
+                        return;
+                    }
+                    processPlayerMessage(mod, greeting, false);
+                }, Player2ExampleMod.server)
+                .exceptionally(ex -> {
+                    System.err.println("ERROR");
+                    ex.printStackTrace();
+                    return null;
+                });
+    }
+
     public static void processPlayerMessage(Player2ExampleMod mod, String rawMsg) {
-        mod.sendUserMessage(rawMsg);
+        processPlayerMessage(mod, rawMsg, true);
+    }
+
+    public static void processPlayerMessage(Player2ExampleMod mod, String rawMsg, boolean shouldSendUsrMsg) {
+        if (shouldSendUsrMsg) {
+            mod.sendUserMessage(rawMsg);
+        }
 
         updateNewCharacter(mod)
                 .thenComposeAsync(newChar -> {
@@ -96,7 +118,7 @@ public class ClientServiceThreaded {
                 .supplyAsync(Player2APIService::stopSTT, IO_POOL)
                 .thenAcceptAsync(
                         sttText -> {
-                            if (sttText.isEmpty()){
+                            if (sttText.isEmpty()) {
                                 processPlayerMessage(mod, "*could not hear player's voice*");
                                 return;
                             }
