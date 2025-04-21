@@ -31,6 +31,7 @@ public class Player2APIService {
 
         connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
         connection.setRequestProperty("accept", "application/json; charset=utf-8");
+        connection.setRequestProperty("player2-game-key", "ai-gods");
 
         System.out.printf("Sending %s request to %s\n", postRequest? "POST":"GET", endpoint);
 
@@ -196,6 +197,18 @@ public class Player2APIService {
         } catch (Exception e) {
             // handle timeout err here?
             return e.getMessage();
+        }
+    }
+    public static void sendHeartbeat(){
+        try{
+            System.out.println("Sending Heartbeat");
+            Map<String, JsonElement> responseMap = sendRequest("/v1/health", false, null);
+            if(responseMap.containsKey("client_version")){
+                System.out.println("Heartbeat Successful");
+            }
+        }
+        catch(Exception e){
+            System.err.printf("Heartbeat Fail: %s",e.getMessage());
         }
     }
 }

@@ -6,13 +6,12 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.ServerChatEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
 
 import com.google.gson.JsonObject;
-
-
 
 @Mod(Player2ExampleMod.MODID)
 public class Player2ExampleMod {
@@ -25,6 +24,7 @@ public class Player2ExampleMod {
     private Character character = null;
     private Boolean shouldSpeak = true;
     public static Player2ExampleMod instance; // hack for single instance
+    public static long lastHeartbeatTime;
 
     public static String initialPrompt = """
             General Instructions:
@@ -65,6 +65,7 @@ public class Player2ExampleMod {
     public Player2ExampleMod() {
         MinecraftForge.EVENT_BUS.register(this);
         instance = this;
+        lastHeartbeatTime = System.nanoTime();
     }
 
     public void processModCommand(String command) {
@@ -253,6 +254,16 @@ public class Player2ExampleMod {
 
     public void addAssistantResponse(String response) {
         this.conversationHistory.addAssistantMessage(response);
+    }
+
+    @SubscribeEvent
+    public void onServerTick(TickEvent.ServerTickEvent event) {
+        long now = System.nanoTime();
+        // every 60 seconds send heartbeat
+        if (now - lastHeartbeatTime > 60_000_000_000L) {
+            ClientServiceThreaded.sendHeartbeat();
+            lastHeartbeatTime = now;
+        }
     }
 
 }
