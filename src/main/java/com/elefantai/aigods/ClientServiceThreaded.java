@@ -96,8 +96,10 @@ public class ClientServiceThreaded {
                 .supplyAsync(Player2APIService::stopSTT, IO_POOL)
                 .thenAcceptAsync(
                         sttText -> {
-                            if (sttText.isEmpty())
+                            if (sttText.isEmpty()){
+                                processPlayerMessage(mod, "*could not hear player's voice*");
                                 return;
+                            }
                             processPlayerMessage(mod, sttText);
                         },
                         Player2ExampleMod.server)
