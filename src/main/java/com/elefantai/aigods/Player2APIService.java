@@ -11,7 +11,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Player2APIService {
-    private static final String BASE_URL = "http://127.0.0.1:4315";
+    private static final String BASE_URL = "http://127.0.0.1:4315"; // ACTUAL
+//    private static final String BASE_URL = "http://127.0.0.1:8080"; // PROXY
+
 
     /**
      * Handles boilerplate logic for interacting with the API endpoint
@@ -28,9 +30,13 @@ public class Player2APIService {
         connection.setRequestMethod(postRequest ? "POST" : "GET");
 
         connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-        connection.setRequestProperty("Accept", "application/json; charset=utf-8");
+        connection.setRequestProperty("accept", "application/json; charset=utf-8");
+
+        System.out.printf("Sending %s request to %s\n", postRequest? "POST":"GET", endpoint);
+
 
         if (postRequest && requestBody != null) {
+            System.out.printf("Request Body: %s\n", requestBody);
             connection.setDoOutput(true);
             try (OutputStream os = connection.getOutputStream()) {
                 byte[] input = requestBody.toString().getBytes(StandardCharsets.UTF_8);
@@ -38,10 +44,26 @@ public class Player2APIService {
             }
         }
 
+
+
         int responseCode = connection.getResponseCode();
+
         if (responseCode != 200) {
+            // read error info:
+            InputStream errorStream = connection.getErrorStream();
+            if (errorStream != null) {
+                BufferedReader errorReader = new BufferedReader(new InputStreamReader(errorStream, StandardCharsets.UTF_8));
+                StringBuilder errorResponse = new StringBuilder();
+                String errorLine;
+                while ((errorLine = errorReader.readLine()) != null) {
+                    errorResponse.append(errorLine);
+                }
+                errorReader.close();
+                System.err.println("Error response: " + errorResponse);
+            }
             throw new IOException("HTTP " + responseCode + ": " + connection.getResponseMessage());
         }
+
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
         StringBuilder response = new StringBuilder();
@@ -57,6 +79,7 @@ public class Player2APIService {
         for (Map.Entry<String, JsonElement> entry : jsonResponse.entrySet()) {
             responseMap.put(entry.getKey(), entry.getValue());
         }
+        System.out.printf("DONE %s request to %s \n", postRequest? "POST":"GET", endpoint);
 
         return responseMap;
     }
@@ -88,7 +111,6 @@ public class Player2APIService {
 
                 if (messageObject != null && messageObject.has("content")) {
                     String content = messageObject.get("content").getAsString();
-                    conversationHistory.addAssistantMessage(content);
                     return Utils.parseCleanedJson(content);
                 }
             }
@@ -154,6 +176,7 @@ public class Player2APIService {
     public static void startSTT(){
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("timeout", 30);
+
         try {
             sendRequest("/v1/stt/start", true, requestBody);
         } catch (Exception e) {
@@ -166,10 +189,10 @@ public class Player2APIService {
     public static String stopSTT () {
         try{
             Map<String, JsonElement> responseMap = sendRequest("/v1/stt/stop", true, null);
-            if(!responseMap.containsKey("message")){
-                throw new Exception("Could not find messages in response");
+            if(!responseMap.containsKey("text")){
+                throw new Exception("Could not find key 'text' in response");
             }
-            return responseMap.get("message").getAsString();
+            return responseMap.get("text").getAsString();
         } catch (Exception e) {
             // handle timeout err here?
             return e.getMessage();

@@ -12,7 +12,6 @@ import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
 
 import com.google.gson.JsonObject;
 
-import java.util.Map;
 
 
 @Mod(Player2ExampleMod.MODID)
@@ -21,29 +20,35 @@ public class Player2ExampleMod {
 
     // These will be set after the first chat message or on login
     private ServerPlayer player = null;
-    private MinecraftServer server = null;
+    public static MinecraftServer server = null;
     private ConversationHistory conversationHistory = null;
     private Character character = null;
     private Boolean shouldSpeak = true;
+    public static Player2ExampleMod instance; // hack for single instance
 
-    public static String initialPrompt =
-            """
+    public static String initialPrompt = """
             General Instructions:
             We are building an AI god in Minecraft that converses with players and executes op commands. Your task is to help the god generate chat messages and op commands.
-            
+
             God's Character Background:
             The character's name is {{characterName}}.
             {{characterDescription}}
-            
+
             Guidance:
             The god can provide Minecraft guides, answer questions, and chat as a friend.
-            
+
             Command execution:
             When asked, the agent can do anything that op commands in Minecraft allow. Examples: "gamemode creative @a", "give Player_Name diamond 4"
-            
+
+            For teleport commands, instead of using relative tp commands, use the player's position provided.
+
             Request Format:
-            God will receive a message from user.
-            
+            God will receive a message from user, as a stringified JSON of the form:
+            {
+                "message" : string // the message that the user sends
+                "playerStatus" : string // metadata relating to the player's position and current dimension
+            }
+
             Response Format:
             Always respond with JSON containing message, op command and reason. All of these are strings.
             {
@@ -54,55 +59,49 @@ public class Player2ExampleMod {
             Always follow this JSON format regardless of previous conversations.
             """;
 
-
     /**
      * Registers event handlers when the mod is initialized.
      */
     public Player2ExampleMod() {
         MinecraftForge.EVENT_BUS.register(this);
+        instance = this;
     }
 
-
-    /**
-     * Updates this. (conversationHistory, character) based on the currently selected character.
-     */
-    private void updateInfo() {
-        Character newCharacter = Player2APIService.getSelectedCharacter();
-        System.out.println(newCharacter);
-        this.character = newCharacter;
-
-        String newPrompt = Utils.replacePlaceholders(initialPrompt, Map.of("characterDescription", character.description, "characterName", character.name));
-
-        if (this.conversationHistory == null) {
-            this.conversationHistory = new ConversationHistory(newPrompt);
-        } else {
-            this.conversationHistory.setBaseSystemPrompt(newPrompt);
-        }
-    }
-
-    public void processModCommand(String command){
-        switch (command){
+    public void processModCommand(String command) {
+        switch (command) {
             case "tts":
                 shouldSpeak = !shouldSpeak;
-                if(!shouldSpeak){
-                    sendSystemMessage("Turning off text to speech");
-                }
-                else{
-                    sendSystemMessage("Turning on text to speech");
+                if (!shouldSpeak) {
+                    sendInfoMessage("Turning off text to speech");
+                } else {
+                    sendInfoMessage("Turning on text to speech");
                 }
                 break;
             case "help":
-                sendSystemMessage("Commands:");
-                sendSystemMessage("'!tts' : toggles text-to-speech");
+                sendInfoMessage("Commands:");
+                sendInfoMessage("'!tts' : toggles text-to-speech");
+                sendInfoMessage("'!start' : Starts listening for microphone speech-to-text");
+                sendInfoMessage("'!stop' : Stops listening for microphone speech-to-text");
+                break;
+            case "start":
+                System.out.println("Start STT");
+                Player2APIService.startSTT();
+                break;
+            case "stop":
+                System.out.println("STOP STT");
+                String result = Player2APIService.stopSTT();
+                System.out.printf("Result: '%s'%n", Player2APIService.stopSTT());
+                ClientServiceThreaded.processPlayerMessage(instance, result);
                 break;
             default:
-                sendSystemMessage("Unknown command. Type !help for all commands");
+                sendInfoMessage("Unknown command. Type !help for all commands");
         }
     }
 
     /**
      * Handles chat messages sent by players.
-     * Processes the message, updates conversation history, and generates a response.
+     * Processes the message, updates conversation history, and generates a
+     * response.
      *
      * @param event The server chat event triggered when a player sends a message.
      */
@@ -115,125 +114,145 @@ public class Player2ExampleMod {
 
         if (server != null) {
             System.out.println("Setting Server");
-            this.server = server;
+            Player2ExampleMod.server = server;
         }
-
-        System.out.println("Received message: " + message);
-
-
         if (!message.isEmpty() && message.charAt(0) == '!') {
             processModCommand(message.substring(1)); // remove '!' and process the command
-            event.setCanceled(true); // prevent the chat message from being sent
             return;
         }
-
-        // shows player's message
-        System.out.println("Sending player message");
-        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s",  this.player.getName().getString(), event.getMessage().getString())));
-
-        // Get dynamic conversation history
-        updateInfo();
-        conversationHistory.addUserMessage(message);
-
-        try {
-            JsonObject response = Player2APIService.completeConversation(conversationHistory);
-            String responseAsString = response.toString();
-            System.out.println("LLM Response: " + responseAsString);
-
-            String commandResponse = Utils.getStringJsonSafely(response, "command");
-
-            if (commandResponse != null) {
-                String[] commands = Utils.splitLinesToArray(commandResponse);
-                for (String command : commands) {
-                    if (!command.isBlank()) {
-                        System.out.println("Command received: " + command);
-                        sendCommand(command);
-                    }
-                }
-            }
-
-            String chatMessage = Utils.getStringJsonSafely(response, "message");
-            if (chatMessage != null) {
-                System.out.println("Chat response received: " + chatMessage);
-                processAIChatMessage(chatMessage);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            processAIChatMessage("Error communicating with AI: " + e.getClass().getSimpleName() + " - " + e.getMessage());
-        }
-        event.setCanceled(true);
+        event.setCanceled(true); // prevent the chat message from being sent
+        ClientServiceThreaded.processPlayerMessage(instance, message);
     }
 
-
     /**
-     * Sends a greeting message when a player joins the server, also updates info and sets player.
+     * Sends a greeting message when a player joins the server, also updates info
+     * and sets player.
      *
      * @param event The player login event triggered when a player connects.
      */
     @SubscribeEvent
     public void onPlayerLoggedInEvent(PlayerLoggedInEvent event) {
-        if(event.getEntity() instanceof ServerPlayer) {
+        if (event.getEntity() instanceof ServerPlayer) {
             this.player = (ServerPlayer) event.getEntity();
-            updateInfo();
-            processAIChatMessage(this.character.greetingInfo);
+            MinecraftServer server = player.getServer();
+            if (server != null) {
+                System.out.println("Setting Server");
+                Player2ExampleMod.server = server;
+            }
+            ClientServiceThreaded.sendGreeting(instance);
+
         }
     }
-
 
     /**
      * Executes a server command.
      *
-     * @param command The command string to execute.
+     * @param command The list of commands to execute.
      */
-    private void sendCommand(String command) {
-        try{
-            System.out.println("Sending command: " + command);
-            if (this.server == null) {
-                System.err.println("Server is empty");
-                return;
+    public void executeCommandString(String command) {
+        if (command == null || Player2ExampleMod.server == null)
+            return;
+        try {
+            String[] commands = Utils.splitLinesToArray(command);
+            for (String cmd : commands) {
+                if (!cmd.isBlank()) {
+                    System.out.println("Sending command: " + cmd);
+                    CommandSourceStack commandSource = Player2ExampleMod.server.createCommandSourceStack();
+                    Player2ExampleMod.server.getCommands().performPrefixedCommand(commandSource, command);
+                }
             }
-            CommandSourceStack commandSource = this.server.createCommandSourceStack();
-            this.server.getCommands().performPrefixedCommand(commandSource, command);
-        }
-        catch(Exception e){
-            System.err.printf("Failed to run command: '%s'. error message:%s%n", command, e.getMessage());
+        } catch (Exception e) {
+            System.err.printf("Failed to run command(s): '%s'. error message:%s%n", command, e.getMessage());
         }
     }
 
-
     /**
-     * Sends a chat message as the character.
-     *
+     * Sends a chat message as the character
+     * 
      * @param message The message to send in chat.
      */
-    private void processAIChatMessage(String message) {
-        // TODO: figure out how to send above text instead of below.
+    public void sendCharacterMessage(String message) {
+        if (message == null)
+            return;
+        System.out.println("Sending Character message: " + message);
 
-        System.out.println("Processing AI Chat Response: " + message);
-        // tried sendCommand(/say ...) but still prints above user message
         if (this.player == null) {
             System.err.println("Player is empty");
             return;
         }
-        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s", this.character.name, message)));
-        if(shouldSpeak){
-            Player2APIService.textToSpeech(message, character);
-        }
 
+        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s", this.character.name, message)));
     }
+
     /**
      * Sends a chat message as INFO.
      *
      * @param message The message to send in chat.
      */
-    private void sendSystemMessage(String message){
+    private void sendInfoMessage(String message) {
         System.out.println("Sending system message");
 
-        if(this.player == null){
+        if (this.player == null) {
             System.err.println("Player is empty");
             return;
         }
         this.player.sendSystemMessage(Component.literal(String.format("INFO: %s", message)));
     }
+
+    public String addPlayerStatusToUsrMessage(String message) {
+        JsonObject json = new JsonObject();
+        json.addProperty("message", message);
+
+        if (this.player != null) {
+            String dimension = this.player.level().dimension().location().toString(); // Get dimension as string
+            // int because otherwise tp doesnt work properly
+
+            json.addProperty("playerStatus",
+                    String.format("Player name is '%s' and is at (%d, %d, %d) in %s", player.getName().getString(),
+                            (int) player.getX(), (int) player.getY(), (int) player.getZ(), dimension));
+        } else {
+            json.addProperty("playerStatus", ""); // Blank if player is null
+        }
+        return json.toString();
+    }
+
+    public void setCharacter(Character c) {
+        this.character = c;
+    }
+
+    public Character getCharacter() {
+        return this.character;
+    }
+
+    public void setConversationHistory(ConversationHistory conversationHistory) {
+        this.conversationHistory = conversationHistory;
+    }
+
+    public ConversationHistory getConversationHistory() {
+        return this.conversationHistory;
+    }
+
+    public static String getInitialPrompt() {
+        return initialPrompt;
+    }
+
+    public void sendUserMessage(String message) {
+        System.out.println("Sending player message + adding to conversation history");
+        this.player.sendSystemMessage(
+                Component.literal(String.format("<%s> %s", this.player.getName().getString(), message)));
+
+    }
+
+    public void addProcessedUserMessage(String processed) {
+        this.conversationHistory.addUserMessage(processed);
+    }
+
+    public boolean getShouldSpeak() {
+        return this.shouldSpeak;
+    }
+
+    public void addAssistantResponse(String response) {
+        this.conversationHistory.addAssistantMessage(response);
+    }
+
 }
