@@ -130,4 +130,15 @@ public class ClientServiceThreaded {
                     return null;
                 });
     }
+
+    public static void sendHeartbeat() {
+        CompletableFuture
+                .runAsync(Player2APIService::sendHeartbeat, IO_POOL)
+                .thenRunAsync(() -> System.out.println("Sent heartbeat"),
+                        Player2ExampleMod.server)
+                .exceptionally(ex -> {
+                    ex.printStackTrace();
+                    return null;
+                });
+    }
 }
