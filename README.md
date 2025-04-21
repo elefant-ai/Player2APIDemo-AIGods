@@ -25,7 +25,7 @@ Download the latest release of the mod (.jar file) [here](https://github.com/ele
 ### Step 4
 Then install via forge (drag into .minecraft/mods)
 ### Step 5
-Run the Player2 app, then open minecraft. Open a singleplayer world, and the character should greet you with a message. Simply type in chat, and the character will respond with chat messages, commands, or both.
+Run the Player2 app, then open minecraft. Open a singleplayer world, and the character should greet you with a message. Simply type in chat, and the character will respond with chat messages, commands, or both. You can also press x to use voice chat with the god.
 
 # Development Setup:
 ### Step 1:
