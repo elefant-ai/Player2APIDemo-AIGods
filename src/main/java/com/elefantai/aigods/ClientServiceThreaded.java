@@ -1,11 +1,13 @@
 package com.elefantai.aigods;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.elefantai.aigods.player2api.Player2APIService;
 import net.minecraft.server.MinecraftServer;
 
 public class ClientServiceThreaded {
@@ -65,8 +67,13 @@ public class ClientServiceThreaded {
         if (shouldSendUsrMsg) {
             mod.sendUserMessage(rawMsg);
         }
+        try {
+            Player2APIService.completeConversation(rawMsg, mod.player.getName().getString());
+        } catch (Exception ex) {
+            System.err.println(ex);
+        }
 
-        updateNewCharacter(mod)
+        /*updateNewCharacter(mod)
                 .thenComposeAsync(newChar -> {
                     String processed = mod.addPlayerStatusToUsrMessage(rawMsg);
                     mod.addProcessedUserMessage(processed);
@@ -102,7 +109,7 @@ public class ClientServiceThreaded {
                     System.err.println("ERROR");
                     ex.printStackTrace();
                     return null;
-                });
+                });*/
     }
 
     public static void startSTT() {

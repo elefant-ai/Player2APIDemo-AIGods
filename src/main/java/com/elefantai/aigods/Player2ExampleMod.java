@@ -1,5 +1,6 @@
 package com.elefantai.aigods;
 
+import com.elefantai.aigods.player2api.Player2APIService;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -18,7 +19,7 @@ public class Player2ExampleMod {
     public static final String MODID = "aigods";
 
     // These will be set after the first chat message or on login
-    private ServerPlayer player = null;
+    public ServerPlayer player = null;
     public static MinecraftServer server = null;
     private ConversationHistory conversationHistory = null;
     private Character character = null;
@@ -63,6 +64,15 @@ public class Player2ExampleMod {
      * Registers event handlers when the mod is initialized.
      */
     public Player2ExampleMod() {
+
+        Player2APIService.StreamEventHandler eventHandler = new Player2APIService.StreamEventHandler("minecraft",json -> {
+            instance.sendCharacterMessage(json.get("message").getAsString());
+        });
+
+        MinecraftForge.EVENT_BUS.register(eventHandler);
+
+        // Start listening
+
         MinecraftForge.EVENT_BUS.register(this);
         instance = this;
         lastHeartbeatTime = System.nanoTime();
@@ -182,7 +192,7 @@ public class Player2ExampleMod {
             return;
         }
 
-        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s", this.character.name, message)));
+        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s", this.character.name, message.trim())));
     }
 
     /**

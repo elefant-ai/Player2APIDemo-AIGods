@@ -1,5 +1,7 @@
 package com.elefantai.aigods;
 
+import com.elefantai.aigods.player2api.Player2APIService;
+
 import java.util.Scanner;
 
 public class TestSTT {
