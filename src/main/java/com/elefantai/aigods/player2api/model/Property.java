@@ -8,6 +8,9 @@ import java.util.Map;
 public class Property {
     private Map<String, Object> additionalProperties;
 
+    public Property(Map<String, Object> additionalProperties) {
+        this.additionalProperties = additionalProperties;
+    }
     public Map<String, Object> getAdditionalProperties() {
         return additionalProperties;
     }

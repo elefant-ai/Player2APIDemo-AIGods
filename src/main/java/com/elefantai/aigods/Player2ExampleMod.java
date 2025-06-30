@@ -14,6 +14,8 @@ import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
 
 import com.google.gson.JsonObject;
 
+import java.util.List;
+
 @Mod(Player2ExampleMod.MODID)
 public class Player2ExampleMod {
     public static final String MODID = "aigods";
@@ -66,7 +68,25 @@ public class Player2ExampleMod {
     public Player2ExampleMod() {
 
         Player2APIService.StreamEventHandler eventHandler = new Player2APIService.StreamEventHandler("minecraft",json -> {
-            instance.sendCharacterMessage(json.get("message").getAsString());
+
+            if (json.commands!= null) {
+                json.commands.forEach(command -> {
+
+                    if (command.name.equals("minecraft_command")) {
+                        JsonObject arguments = command.arguments(JsonObject.class);
+                        String cmd = arguments.get("command").getAsString();
+                        if (cmd != null && !cmd.isEmpty()) {
+                            System.out.println("Executing command: " + cmd);
+                            executeCommandString(cmd);
+                        } else {
+                            System.out.println("Received empty command, skipping execution.");
+                        }
+                    }
+                });
+            }
+            if (json.message != null) {
+                instance.sendCharacterMessage(json.message);
+            }
         });
 
         MinecraftForge.EVENT_BUS.register(eventHandler);

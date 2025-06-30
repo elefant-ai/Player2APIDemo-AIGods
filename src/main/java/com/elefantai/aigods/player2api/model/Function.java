@@ -13,6 +13,14 @@ public class Function {
         return name;
     }
 
+
+    public Function(String name, String description, Parameters parameters) {
+        this.name = name;
+        this.description = description;
+        this.parameters = parameters;
+    }
+
+
     public void setName(String name) {
         this.name = name;
     }

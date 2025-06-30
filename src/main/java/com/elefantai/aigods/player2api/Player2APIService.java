@@ -2,7 +2,7 @@ package com.elefantai.aigods.player2api;
 
 import com.elefantai.aigods.Character;
 import com.elefantai.aigods.Utils;
-import com.elefantai.aigods.player2api.model.SpawnNPC;
+import com.elefantai.aigods.player2api.model.*;
 import com.google.gson.*;
 
 import java.io.*;
@@ -86,11 +86,11 @@ public class Player2APIService {
     public static class JsonStreamListener {
         private final HttpClient client;
         private final Gson gson;
-        private final Consumer<JsonObject> onMessage;
+        private final Consumer<Response> onMessage;
         private final ConcurrentLinkedQueue<JsonObject> pendingMessages = new ConcurrentLinkedQueue<>();
         private CompletableFuture<Void> streamTask;
 
-        public JsonStreamListener(Consumer<JsonObject> onMessage) {
+        public JsonStreamListener(Consumer<Response> onMessage) {
             this.client = HttpClient.newHttpClient();
             this.gson = new Gson();
             this.onMessage = onMessage;
@@ -130,7 +130,7 @@ public class Player2APIService {
                 while ((line = reader.readLine()) != null && !Thread.currentThread().isInterrupted()) {
                     if (!line.trim().isEmpty()) {
                         try {
-                            JsonObject jsonObject = gson.fromJson(line, JsonObject.class);
+                            Response jsonObject = gson.fromJson(line, Response.class);
                             onMessage.accept(jsonObject);
                         } catch (Exception e) {
                             System.err.println("Failed to parse JSON: " + line);
@@ -176,7 +176,7 @@ public class Player2APIService {
     public static class StreamEventHandler {
         private final JsonStreamListener streamListener;
 
-        public StreamEventHandler(String gameId, Consumer<JsonObject> onMessage) {
+        public StreamEventHandler(String gameId, Consumer<Response> onMessage) {
             this.streamListener = new JsonStreamListener(onMessage);
             this.streamListener.startListening("http://127.0.0.1:4315/npc/v1/games/"+ gameId + "/npcs/responses");
         }
@@ -275,14 +275,21 @@ public class Player2APIService {
         JsonObject requestBody = new JsonObject();
 
         if (currentNpcId == null) {
-            currentNpcId = spawnNpc(new SpawnNPC("A helpful AI God", List.of(),"AI God", "God","Greetings, You are an AI overlord", "test"));
+            HashMap<String, Property> properties = new HashMap<>();
+            HashMap<String, Object> property = new HashMap<>();
+            property.put("type", "string");
+            property.put("description", "The minecraft command you want to run, without a slash prefix");
+            properties.put("command", new Property(property));
+
+            currentNpcId = spawnNpc(new SpawnNPC("A helpful AI God", List.of(
+                    new Function("minecraft_command", "Run any Minecraft command", new Parameters(properties, List.of("command")))),"AI God", "God","Greetings, You are an AI overlord", "test"));
         }
 
 
 
         requestBody.addProperty("sender_message", message);
         requestBody.addProperty("sender_name", senderName);
-        requestBody.addProperty("game_state_info", "N/A");
+        //requestBody.addProperty("game_state_info", "N/A");
 
         try {
             String path = "/npc/v1/games/minecraft/npcs/" + currentNpcId + "/chat";

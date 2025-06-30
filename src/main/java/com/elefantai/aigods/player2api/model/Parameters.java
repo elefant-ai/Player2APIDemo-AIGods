@@ -10,6 +10,12 @@ public class Parameters {
     private Map<String, Property> properties;
     private List<String> required;
 
+    public Parameters(Map<String, Property> properties, List<String> required) {
+        this.type = "object";
+        this.properties = properties;
+        this.required = required;
+    }
+
     // Getters and setters
     public String getType() {
         return type;
