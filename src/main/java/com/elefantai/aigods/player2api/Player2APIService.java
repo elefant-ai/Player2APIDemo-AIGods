@@ -36,7 +36,7 @@ public class Player2APIService {
 
     public static UUID spawnNpc(SpawnNPC payload) {
         try {
-            String path = "/npc/v1/games/minecraft/npcs/spawn";
+            String path = "/v1/npc/games/minecraft/npcs/spawn";
             URI uri = URI.create(BASE_URL + path);
             Gson gson = new Gson();
             String json = gson.toJson(payload);
@@ -62,25 +62,6 @@ public class Player2APIService {
             System.err.println("Failed to spawn NPC: " + e.getMessage());
             return null;
         }
-    }
-
-    private static void initialise(String gameId) {
-        try {
-            String path = "/npc/v1/games/" + gameId + "/init";
-            URI uri = URI.create(BASE_URL + path);
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(uri)
-                    .header("Content-Type", "application/json; charset=utf-8")
-                    .header("accept", "text/plain")
-                    .PUT(HttpRequest.BodyPublishers.noBody())
-                    .build();
-            HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.discarding());
-        } catch (Exception e) {
-
-        }
-
-
     }
 
     public static class JsonStreamListener {
@@ -178,7 +159,7 @@ public class Player2APIService {
 
         public StreamEventHandler(String gameId, Consumer<Response> onMessage) {
             this.streamListener = new JsonStreamListener(onMessage);
-            this.streamListener.startListening("http://127.0.0.1:4315/npc/v1/games/"+ gameId + "/npcs/responses");
+            this.streamListener.startListening("http://127.0.0.1:4315/v1/npc/games/"+ gameId + "/npcs/responses");
         }
 
         @SubscribeEvent
@@ -292,7 +273,7 @@ public class Player2APIService {
         //requestBody.addProperty("game_state_info", "N/A");
 
         try {
-            String path = "/npc/v1/games/minecraft/npcs/" + currentNpcId + "/chat";
+            String path = "/v1/npc/games/minecraft/npcs/" + currentNpcId + "/chat";
             URI uri = URI.create(BASE_URL + path);
 
             HttpRequest request = HttpRequest.newBuilder()
