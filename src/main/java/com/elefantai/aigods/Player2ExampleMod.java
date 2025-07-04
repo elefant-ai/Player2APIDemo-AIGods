@@ -28,6 +28,7 @@ public class Player2ExampleMod {
     private Boolean shouldSpeak = true;
     public static Player2ExampleMod instance; // hack for single instance
     public static long lastHeartbeatTime;
+    public static long lastCharacterCheckTime;
 
     public static String initialPrompt = """
             General Instructions:
@@ -96,6 +97,7 @@ public class Player2ExampleMod {
         MinecraftForge.EVENT_BUS.register(this);
         instance = this;
         lastHeartbeatTime = System.nanoTime();
+        lastCharacterCheckTime = System.nanoTime();
     }
 
     public void processModCommand(String command) {
@@ -281,6 +283,15 @@ public class Player2ExampleMod {
         if (now - lastHeartbeatTime > 60_000_000_000L) {
             ClientServiceThreaded.sendHeartbeat();
             lastHeartbeatTime = now;
+        }
+        // periodically check for character changes
+        if (now - lastCharacterCheckTime > 5_000_000_000L) {
+            ClientServiceThreaded.updateNewCharacter(instance)
+                    .exceptionally(ex -> {
+                        ex.printStackTrace();
+                        return null;
+                    });
+            lastCharacterCheckTime = now;
         }
     }
 
