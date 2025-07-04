@@ -54,7 +54,7 @@ public class Player2ExampleMod {
      */
     public Player2ExampleMod() {
 
-        Player2APIService.StreamEventHandler eventHandler = new Player2APIService.StreamEventHandler("minecraft",json -> {
+        Player2APIService.StreamEventHandler eventHandler = new Player2APIService.StreamEventHandler("ai-gods",json -> {
 
             if (json.commands!= null) {
                 json.commands.forEach(command -> {

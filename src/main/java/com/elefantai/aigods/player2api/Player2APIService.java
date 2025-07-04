@@ -40,7 +40,7 @@ public class Player2APIService {
 
     public static UUID spawnNpc(SpawnNPC payload) {
         try {
-            String path = "/v1/npc/games/minecraft/npcs/spawn";
+            String path = "/v1/npc/games/ai-gods/npcs/spawn";
             URI uri = URI.create(BASE_URL + path);
             Gson gson = new Gson();
             String json = gson.toJson(payload);
@@ -277,7 +277,7 @@ public class Player2APIService {
         //requestBody.addProperty("game_state_info", "N/A");
 
         try {
-            String path = "/v1/npc/games/minecraft/npcs/" + currentNpcId + "/chat";
+            String path = "/v1/npc/games/ai-gods/npcs/" + currentNpcId + "/chat";
             URI uri = URI.create(BASE_URL + path);
 
             HttpRequest request = HttpRequest.newBuilder()
