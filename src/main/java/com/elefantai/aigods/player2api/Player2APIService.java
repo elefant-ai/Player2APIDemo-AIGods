@@ -87,10 +87,16 @@ public class Player2APIService {
             }
 
             streamTask = CompletableFuture.runAsync(() -> {
-                try {
-                    listenToEndpoint(url);
-                } catch (Exception e) {
-                    e.printStackTrace();
+                boolean finished = false;
+                while (!finished) {
+                    try {
+                        listenToEndpoint(url);
+                        finished = true;
+                    } catch (Exception ignored) {
+                    }
+                    try {
+                        Thread.sleep(30000);
+                    } catch (InterruptedException ignored) {}
                 }
             });
         }
