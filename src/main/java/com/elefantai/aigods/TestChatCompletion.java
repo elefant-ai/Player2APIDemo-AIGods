@@ -1,26 +1,24 @@
 package com.elefantai.aigods;
 
+import com.elefantai.aigods.player2api.Player2APIService;
 import com.google.gson.JsonObject;
+
+import java.util.Optional;
 
 public class TestChatCompletion {
     public static void main(String[] args) {
         try {
             ConversationHistory conversationHistory = new ConversationHistory(Player2ExampleMod.initialPrompt);
 
-            conversationHistory.addUserMessage("Use command '/give coal @a' ");
-            JsonObject response1 = Player2APIService.completeConversation(conversationHistory);
-            conversationHistory.addSystemMessage(response1.toString());
-            processResponse(response1, 1);
+            Player2APIService.completeConversation("Use command '/give coal @a' ", "Player");
 
-            conversationHistory.addUserMessage("Use chat to say 'hello'");
-            JsonObject response2 = Player2APIService.completeConversation(conversationHistory);
-            conversationHistory.addSystemMessage(response2.toString());
-            processResponse(response2, 2);
+            //processResponse(response1, 1);
 
-            conversationHistory.addUserMessage("Use chat to say 'hello again', also run command '/give diamond @a'");
-            JsonObject response3 = Player2APIService.completeConversation(conversationHistory);
-            conversationHistory.addSystemMessage(response3.toString());
-            processResponse(response3, 3);
+            Player2APIService.completeConversation("Use chat to say 'hello'", "Player");
+            //processResponse(response2, 2);
+
+            Player2APIService.completeConversation("Use chat to say 'hello again', also run command '/give diamond @a'", "Player");
+            //processResponse(response3, 3);
 
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
