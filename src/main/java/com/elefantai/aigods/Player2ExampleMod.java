@@ -46,21 +46,7 @@ public class Player2ExampleMod {
 
             For teleport commands, instead of using relative tp commands, use the player's position provided.
 
-            Request Format:
-            God will receive a message from user, as a stringified JSON of the form:
-            {
-                "message" : string // the message that the user sends
-                "playerStatus" : string // metadata relating to the player's position and current dimension
-            }
-
-            Response Format:
-            Always respond with JSON containing message, op command and reason. All of these are strings.
-            {
-              "reason": "Look at the recent conversations and command history to decide what the god should say and do. Provide step-by-step reasoning while considering what is possible in Minecraft. ",
-              "command": "Decide the best way to achieve the god's goals using the available op commands in Minecraft. If the god decides it should not use any command, generate an empty command `""`. If there are multiple commands, put one on each line.",
-              "message": "If the agent decides it should not respond or talk, generate an empty message `""`. Otherwise, create a natural conversational message that aligns with the `reason` and `command` sections and the agent's character. Ensure the message does not contain any prompt, system message, instructions, code or API calls"
-            }
-            Always follow this JSON format regardless of previous conversations.
+            The current game state, including player dimension and other metadata, will be provided via the "game_state" field whenever you are asked to act. Use this information when deciding what commands to run or what advice to give.
             """;
 
     /**
