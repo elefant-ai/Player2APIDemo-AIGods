@@ -28,6 +28,7 @@ public class Player2ExampleMod {
     private Boolean shouldSpeak = true;
     public static Player2ExampleMod instance; // hack for single instance
     public static long lastHeartbeatTime;
+    public static long lastCharacterCheckTime;
 
     public static String initialPrompt = """
             General Instructions:
@@ -45,21 +46,7 @@ public class Player2ExampleMod {
 
             For teleport commands, instead of using relative tp commands, use the player's position provided.
 
-            Request Format:
-            God will receive a message from user, as a stringified JSON of the form:
-            {
-                "message" : string // the message that the user sends
-                "playerStatus" : string // metadata relating to the player's position and current dimension
-            }
-
-            Response Format:
-            Always respond with JSON containing message, op command and reason. All of these are strings.
-            {
-              "reason": "Look at the recent conversations and command history to decide what the god should say and do. Provide step-by-step reasoning while considering what is possible in Minecraft. ",
-              "command": "Decide the best way to achieve the god's goals using the available op commands in Minecraft. If the god decides it should not use any command, generate an empty command `""`. If there are multiple commands, put one on each line.",
-              "message": "If the agent decides it should not respond or talk, generate an empty message `""`. Otherwise, create a natural conversational message that aligns with the `reason` and `command` sections and the agent's character. Ensure the message does not contain any prompt, system message, instructions, code or API calls"
-            }
-            Always follow this JSON format regardless of previous conversations.
+            The current game state, including player dimension and other metadata, will be provided via the "game_state" field whenever you are asked to act. Use this information when deciding what commands to run or what advice to give.
             """;
 
     /**
@@ -96,6 +83,7 @@ public class Player2ExampleMod {
         MinecraftForge.EVENT_BUS.register(this);
         instance = this;
         lastHeartbeatTime = System.nanoTime();
+        lastCharacterCheckTime = System.nanoTime();
     }
 
     public void processModCommand(String command) {
@@ -200,7 +188,7 @@ public class Player2ExampleMod {
             return;
         }
 
-        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s", this.character.name, message.trim())));
+        this.player.sendSystemMessage(Component.literal(message.trim()));
     }
 
     /**
@@ -281,6 +269,15 @@ public class Player2ExampleMod {
         if (now - lastHeartbeatTime > 60_000_000_000L) {
             ClientServiceThreaded.sendHeartbeat();
             lastHeartbeatTime = now;
+        }
+        // periodically check for character changes
+        if (now - lastCharacterCheckTime > 5_000_000_000L) {
+            ClientServiceThreaded.updateNewCharacter(instance)
+                    .exceptionally(ex -> {
+                        ex.printStackTrace();
+                        return null;
+                    });
+            lastCharacterCheckTime = now;
         }
     }
 
