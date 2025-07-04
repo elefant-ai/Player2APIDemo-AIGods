@@ -34,6 +34,10 @@ public class Player2APIService {
     @Nullable
     private static UUID currentNpcId;
 
+    public static void setCurrentNpcId(UUID npcId) {
+        currentNpcId = npcId;
+    }
+
     public static UUID spawnNpc(SpawnNPC payload) {
         try {
             String path = "/v1/npc/games/minecraft/npcs/spawn";
