@@ -42,8 +42,8 @@ public class Player2ExampleMod {
             When asked, the agent can do anything that op commands in Minecraft allow. Examples: "gamemode creative @a", "give Player_Name diamond 4", "execute at Player_Name run summon sheep"
 
             For teleport commands, instead of using relative tp commands, use the player's position provided.
-
-            The current game state, including player dimension and other metadata, will be provided via the "game_state" field whenever you are asked to act. Use this information when deciding what commands to run or what advice to give.
+            
+            If you have not yet said anything, introduce yourself as the yourself, explain your purpose, and ask the player what they need help with.
             """;
 
     /**
