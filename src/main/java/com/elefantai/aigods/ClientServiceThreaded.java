@@ -31,8 +31,15 @@ public class ClientServiceThreaded {
                     }
                     // now change on main thread:
                     MinecraftServer server = Player2ExampleMod.server;
+                    if (server == null) {
+                        System.err.println("Server is null, cannot update character");
+                        return newChar;
+                    }
                     server.execute(() -> {
                         mod.setCharacter(newChar);
+                        if (Player2APIService.checkIfClientIdExists(newChar.id)) {
+                            return;
+                        }
 
                         String newPrompt = Utils.replacePlaceholders(
                                 Player2ExampleMod.getInitialPrompt(),
@@ -62,7 +69,7 @@ public class ClientServiceThreaded {
                                 newPrompt,
                                 voiceId));
                         if (newId != null) {
-                            Player2APIService.setCurrentNpcId(newId);
+                            Player2APIService.setCurrentNpcId(newChar.id, newId);
                         }
 
                         System.out.printf("Switched character to %s%n", newChar.name);
@@ -95,8 +102,11 @@ public class ClientServiceThreaded {
         if (shouldSendUsrMsg) {
             mod.sendUserMessage(rawMsg);
         }
+
+        String playerName = mod.player.getName().getString();
         try {
-            Player2APIService.completeConversation(rawMsg, mod.player.getName().getString());
+            System.out.println(playerName);
+            Player2APIService.completeConversation(rawMsg, playerName);
         } catch (Exception ex) {
             System.err.println(ex);
         }

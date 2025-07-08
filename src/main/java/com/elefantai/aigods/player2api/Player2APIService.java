@@ -34,8 +34,22 @@ public class Player2APIService {
     @Nullable
     private static UUID currentNpcId;
 
-    public static void setCurrentNpcId(UUID npcId) {
+
+    private static HashMap<UUID, UUID> clientIdToNpcApiIdMap = new HashMap();
+
+    public static void setCurrentNpcId(UUID clientId, UUID npcId) {
+        clientIdToNpcApiIdMap.put(clientId, npcId);
         currentNpcId = npcId;
+    }
+
+    public static boolean checkIfClientIdExists(UUID clientId) {
+        UUID id = clientIdToNpcApiIdMap.get(clientId);
+        if (id != null) {
+            currentNpcId = id;
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public static UUID spawnNpc(SpawnNPC payload) {
@@ -265,22 +279,11 @@ public class Player2APIService {
     public static void completeConversation(String message, String senderName) throws Exception {
         JsonObject requestBody = new JsonObject();
 
-        if (currentNpcId == null) {
-            HashMap<String, Property> properties = new HashMap<>();
-            HashMap<String, Object> property = new HashMap<>();
-            property.put("type", "string");
-            property.put("description", "The minecraft command you want to run, without a slash prefix");
-            properties.put("command", new Property(property));
-
-            currentNpcId = spawnNpc(new SpawnNPC("A helpful AI God", List.of(
-                    new Function("minecraft_command", "Run any Minecraft command", new Parameters(properties, List.of("command")))),"AI God", "God","Greetings, You are an AI overlord", "test"));
-        }
 
 
 
         requestBody.addProperty("sender_message", message);
         requestBody.addProperty("sender_name", senderName);
-        //requestBody.addProperty("game_state_info", "N/A");
 
         try {
             String path = "/v1/npc/games/ai-gods/npcs/" + currentNpcId + "/chat";
@@ -326,10 +329,11 @@ public class Player2APIService {
             String greeting = Utils.getStringJsonSafely(firstCharacter, "greeting");
             String description = Utils.getStringJsonSafely(firstCharacter, "description");
             String[] voiceIds = Utils.getStringArrayJsonSafely(firstCharacter, "voice_ids");
-            return new com.elefantai.aigods.Character(name, greeting, description, voiceIds);
+            UUID id = Utils.getUUIDSafely(firstCharacter, "id");
+            return new com.elefantai.aigods.Character(name, greeting, description, voiceIds, id);
         } catch (Exception e) {
             System.err.println("Warning, getSelectedCharacter failed, reverting to default. Error message: " + e.getMessage());
-            return new com.elefantai.aigods.Character("AI god", "Greetings", "You are a helpful AI God", new String [0]);
+            return new com.elefantai.aigods.Character("AI god", "Greetings", "You are a helpful AI God", new String [0], UUID.fromString("00000000-0000-0000-0000-000000000000"));
         }
     }
 

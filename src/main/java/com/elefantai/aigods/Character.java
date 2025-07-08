@@ -1,12 +1,14 @@
 package com.elefantai.aigods;
 
 import java.util.Arrays;
+import java.util.UUID;
 
 public class Character {
     public final String name;
     public final String greetingInfo;
     public final String description;
     public final String[] voiceIds;
+    public final UUID id;
 
     /**
      * Constructs a Character instance with provided values.
@@ -15,11 +17,12 @@ public class Character {
      * @param greetingInfo A description of what the greeting should look like. Note this is not what the actual greeting should be, but rather a prompt that can add to it.
      * @param voiceIds An array of voice IDs associated with the character.
      */
-    public Character(String characterName, String greetingInfo, String description, String[] voiceIds) {
+    public Character(String characterName, String greetingInfo, String description, String[] voiceIds, UUID id) {
         this.name = characterName;
         this.greetingInfo = greetingInfo;
         this.voiceIds = voiceIds;
         this.description = description;
+        this.id = id;
     }
 
 
