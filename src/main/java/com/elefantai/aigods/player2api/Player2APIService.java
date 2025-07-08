@@ -18,9 +18,9 @@ import java.io.InputStreamReader;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.event.TickEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.minecraft.client.Minecraft;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -187,10 +187,8 @@ public class Player2APIService {
         }
 
         @SubscribeEvent
-        public void onClientTick(TickEvent.ClientTickEvent event) {
-            if (event.phase == TickEvent.Phase.END) {
-                streamListener.processPendingMessages();
-            }
+        public void onClientTick(ClientTickEvent.Post event) {
+            streamListener.processPendingMessages();
         }
     }
     private static final String BASE_URL = "http://127.0.0.1:4315"; // ACTUAL

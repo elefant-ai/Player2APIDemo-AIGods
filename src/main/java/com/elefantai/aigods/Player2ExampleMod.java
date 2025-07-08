@@ -5,14 +5,14 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.ServerChatEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.ServerChatEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
 
 import com.google.gson.JsonObject;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.List;
 
@@ -73,11 +73,11 @@ public class Player2ExampleMod {
             }
         });
 
-        MinecraftForge.EVENT_BUS.register(eventHandler);
+        NeoForge.EVENT_BUS.register(eventHandler);
 
         // Start listening
 
-        MinecraftForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(this);
         instance = this;
         lastHeartbeatTime = System.nanoTime();
         lastCharacterCheckTime = System.nanoTime();
@@ -260,7 +260,7 @@ public class Player2ExampleMod {
     }
 
     @SubscribeEvent
-    public void onServerTick(TickEvent.ServerTickEvent event) {
+    public void onServerTick(ServerTickEvent.Post event) {
         long now = System.nanoTime();
         // every 60 seconds send heartbeat
         if (now - lastHeartbeatTime > 60_000_000_000L) {
