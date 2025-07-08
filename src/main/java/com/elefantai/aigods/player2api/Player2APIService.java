@@ -274,7 +274,7 @@ public class Player2APIService {
      * @return The AI's response as a JSON object.
      * @throws Exception If there is an error.
      */
-    public static void completeConversation(String message, String senderName) throws Exception {
+    public static void completeConversation(String message, String senderName, boolean tts) throws Exception {
         JsonObject requestBody = new JsonObject();
 
 
@@ -282,6 +282,10 @@ public class Player2APIService {
 
         requestBody.addProperty("sender_message", message);
         requestBody.addProperty("sender_name", senderName);
+
+        if (tts) {
+            requestBody.addProperty("tts", "local_client");
+        }
 
         try {
             String path = "/v1/npc/games/ai-gods/npcs/" + currentNpcId + "/chat";

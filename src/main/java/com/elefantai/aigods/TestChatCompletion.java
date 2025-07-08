@@ -10,14 +10,14 @@ public class TestChatCompletion {
         try {
             ConversationHistory conversationHistory = new ConversationHistory(Player2ExampleMod.initialPrompt);
 
-            Player2APIService.completeConversation("Use command '/give coal @a' ", "Player");
+            Player2APIService.completeConversation("Use command '/give coal @a' ", "Player", false);
 
             //processResponse(response1, 1);
 
-            Player2APIService.completeConversation("Use chat to say 'hello'", "Player");
+            Player2APIService.completeConversation("Use chat to say 'hello'", "Player", false);
             //processResponse(response2, 2);
 
-            Player2APIService.completeConversation("Use chat to say 'hello again', also run command '/give diamond @a'", "Player");
+            Player2APIService.completeConversation("Use chat to say 'hello again', also run command '/give diamond @a'", "Player", false);
             //processResponse(response3, 3);
 
         } catch (Exception e) {

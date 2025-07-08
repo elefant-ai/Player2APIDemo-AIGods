@@ -106,7 +106,7 @@ public class ClientServiceThreaded {
         String playerName = mod.player.getName().getString();
         try {
             System.out.println(playerName);
-            Player2APIService.completeConversation(rawMsg, playerName);
+            Player2APIService.completeConversation(rawMsg, playerName, mod.getShouldSpeak());
         } catch (Exception ex) {
             System.err.println(ex);
         }
