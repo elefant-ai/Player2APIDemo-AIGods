@@ -1,11 +1,21 @@
 package com.elefantai.aigods;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
 
+import com.elefantai.aigods.player2api.model.Function;
+import com.elefantai.aigods.player2api.model.Parameters;
+import com.elefantai.aigods.player2api.model.Property;
+import com.elefantai.aigods.player2api.model.SpawnNPC;
+
+import com.elefantai.aigods.player2api.Player2APIService;
 import net.minecraft.server.MinecraftServer;
 
 public class ClientServiceThreaded {
@@ -21,8 +31,15 @@ public class ClientServiceThreaded {
                     }
                     // now change on main thread:
                     MinecraftServer server = Player2ExampleMod.server;
+                    if (server == null) {
+                        System.err.println("Server is null, cannot update character");
+                        return newChar;
+                    }
                     server.execute(() -> {
                         mod.setCharacter(newChar);
+                        if (Player2APIService.checkIfClientIdExists(newChar.id)) {
+                            return;
+                        }
 
                         String newPrompt = Utils.replacePlaceholders(
                                 Player2ExampleMod.getInitialPrompt(),
@@ -34,6 +51,26 @@ public class ClientServiceThreaded {
                             mod.setConversationHistory(new ConversationHistory(newPrompt));
                         else
                             hist.setBaseSystemPrompt(newPrompt);
+
+                        HashMap<String, Property> properties = new HashMap<>();
+                        HashMap<String, Object> property = new HashMap<>();
+                        property.put("type", "string");
+                        property.put("description", "The minecraft command you want to run, without a slash prefix");
+                        properties.put("command", new Property(property));
+
+                        String voiceId = newChar.voiceIds.length > 0 ? newChar.voiceIds[0] : "";
+                        UUID newId = Player2APIService.spawnNpc(new SpawnNPC(
+                                newChar.description,
+                                List.of(new Function("minecraft_command",
+                                        "Run any Minecraft command",
+                                        new Parameters(properties, List.of("command")))),
+                                newChar.name,
+                                newChar.name,
+                                newPrompt,
+                                voiceId));
+                        if (newId != null) {
+                            Player2APIService.setCurrentNpcId(newChar.id, newId);
+                        }
 
                         System.out.printf("Switched character to %s%n", newChar.name);
                     });
@@ -66,7 +103,15 @@ public class ClientServiceThreaded {
             mod.sendUserMessage(rawMsg);
         }
 
-        updateNewCharacter(mod)
+        String playerName = mod.player.getName().getString();
+        try {
+            System.out.println(playerName);
+            Player2APIService.completeConversation(rawMsg, playerName, mod.getShouldSpeak());
+        } catch (Exception ex) {
+            System.err.println(ex);
+        }
+
+        /*updateNewCharacter(mod)
                 .thenComposeAsync(newChar -> {
                     String processed = mod.addPlayerStatusToUsrMessage(rawMsg);
                     mod.addProcessedUserMessage(processed);
@@ -102,7 +147,7 @@ public class ClientServiceThreaded {
                     System.err.println("ERROR");
                     ex.printStackTrace();
                     return null;
-                });
+                });*/
     }
 
     public static void startSTT() {

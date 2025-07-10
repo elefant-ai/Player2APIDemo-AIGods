@@ -1,71 +1,92 @@
 package com.elefantai.aigods;
 
+import com.elefantai.aigods.network.PacketHandler;
+import com.elefantai.aigods.player2api.Player2APIService;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.ServerChatEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.event.IModBusEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.ServerChatEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
 
 import com.google.gson.JsonObject;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+
+import java.util.List;
 
 @Mod(Player2ExampleMod.MODID)
 public class Player2ExampleMod {
     public static final String MODID = "aigods";
 
     // These will be set after the first chat message or on login
-    private ServerPlayer player = null;
+    public ServerPlayer player = null;
     public static MinecraftServer server = null;
     private ConversationHistory conversationHistory = null;
     private Character character = null;
     private Boolean shouldSpeak = true;
     public static Player2ExampleMod instance; // hack for single instance
     public static long lastHeartbeatTime;
+    public static long lastCharacterCheckTime;
 
     public static String initialPrompt = """
             General Instructions:
             We are building an AI god in Minecraft that converses with players and executes op commands. Your task is to help the god generate chat messages and op commands.
 
-            God's Character Background:
-            The character's name is {{characterName}}.
-            {{characterDescription}}
-
             Guidance:
             The god can provide Minecraft guides, answer questions, and chat as a friend.
+            The minecraft username of the person you are talking to is the same as their name, and you can use it in commands.
 
             Command execution:
-            When asked, the agent can do anything that op commands in Minecraft allow. Examples: "gamemode creative @a", "give Player_Name diamond 4"
+            When asked, the agent can do anything that op commands in Minecraft allow. Examples: "gamemode creative @a", "give Player_Name diamond 4", "execute at Player_Name run summon sheep"
 
             For teleport commands, instead of using relative tp commands, use the player's position provided.
-
-            Request Format:
-            God will receive a message from user, as a stringified JSON of the form:
-            {
-                "message" : string // the message that the user sends
-                "playerStatus" : string // metadata relating to the player's position and current dimension
-            }
-
-            Response Format:
-            Always respond with JSON containing message, op command and reason. All of these are strings.
-            {
-              "reason": "Look at the recent conversations and command history to decide what the god should say and do. Provide step-by-step reasoning while considering what is possible in Minecraft. ",
-              "command": "Decide the best way to achieve the god's goals using the available op commands in Minecraft. If the god decides it should not use any command, generate an empty command `""`. If there are multiple commands, put one on each line.",
-              "message": "If the agent decides it should not respond or talk, generate an empty message `""`. Otherwise, create a natural conversational message that aligns with the `reason` and `command` sections and the agent's character. Ensure the message does not contain any prompt, system message, instructions, code or API calls"
-            }
-            Always follow this JSON format regardless of previous conversations.
+            
+            If you have not yet said anything, introduce yourself as the yourself, explain your purpose, and ask the player what they need help with.
             """;
 
     /**
      * Registers event handlers when the mod is initialized.
      */
-    public Player2ExampleMod() {
-        MinecraftForge.EVENT_BUS.register(this);
+    public Player2ExampleMod(IEventBus modbus ) {
+
+        Player2APIService.StreamEventHandler eventHandler = new Player2APIService.StreamEventHandler("ai-gods",json -> {
+
+            if (json.commands!= null) {
+                json.commands.forEach(command -> {
+
+                    if (command.name.equals("minecraft_command")) {
+                        JsonObject arguments = command.arguments(JsonObject.class);
+                        String cmd = arguments.get("command").getAsString();
+                        if (cmd != null && !cmd.isEmpty()) {
+                            System.out.println("Executing command: " + cmd);
+                            executeCommandString(cmd);
+                        } else {
+                            System.out.println("Received empty command, skipping execution.");
+                        }
+                    }
+                });
+            }
+            if (json.message != null) {
+                instance.sendCharacterMessage(json.message);
+            }
+        });
+
+        NeoForge.EVENT_BUS.register(eventHandler);
+
+        // Start listening
+
+        NeoForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(KeyInputHandler.class);
+        modbus.register(KeyBindings.class);
+        modbus.register(PacketHandler.class);
         instance = this;
         lastHeartbeatTime = System.nanoTime();
+        lastCharacterCheckTime = System.nanoTime();
     }
 
     public void processModCommand(String command) {
@@ -81,18 +102,6 @@ public class Player2ExampleMod {
             case "help":
                 sendInfoMessage("Commands:");
                 sendInfoMessage("'!tts' : toggles text-to-speech");
-                sendInfoMessage("'!start' : Starts listening for microphone speech-to-text");
-                sendInfoMessage("'!stop' : Stops listening for microphone speech-to-text");
-                break;
-            case "start":
-                System.out.println("Start STT");
-                Player2APIService.startSTT();
-                break;
-            case "stop":
-                System.out.println("STOP STT");
-                String result = Player2APIService.stopSTT();
-                System.out.printf("Result: '%s'%n", Player2APIService.stopSTT());
-                ClientServiceThreaded.processPlayerMessage(instance, result);
                 break;
             default:
                 sendInfoMessage("Unknown command. Type !help for all commands");
@@ -182,7 +191,7 @@ public class Player2ExampleMod {
             return;
         }
 
-        this.player.sendSystemMessage(Component.literal(String.format("<%s> %s", this.character.name, message)));
+        this.player.sendSystemMessage(Component.literal(message.trim()));
     }
 
     /**
@@ -257,12 +266,21 @@ public class Player2ExampleMod {
     }
 
     @SubscribeEvent
-    public void onServerTick(TickEvent.ServerTickEvent event) {
+    public void onServerTick(ServerTickEvent.Post event) {
         long now = System.nanoTime();
         // every 60 seconds send heartbeat
         if (now - lastHeartbeatTime > 60_000_000_000L) {
             ClientServiceThreaded.sendHeartbeat();
             lastHeartbeatTime = now;
+        }
+        // periodically check for character changes
+        if (now - lastCharacterCheckTime > 5_000_000_000L) {
+            ClientServiceThreaded.updateNewCharacter(instance)
+                    .exceptionally(ex -> {
+                        ex.printStackTrace();
+                        return null;
+                    });
+            lastCharacterCheckTime = now;
         }
     }
 

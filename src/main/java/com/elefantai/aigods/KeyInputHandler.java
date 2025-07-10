@@ -2,12 +2,12 @@ package com.elefantai.aigods;
 
 import com.elefantai.aigods.network.PacketHandler;
 import com.elefantai.aigods.network.SSendTTSPacket;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-
-@Mod.EventBusSubscriber(modid = Player2ExampleMod.MODID, value = Dist.CLIENT)
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.common.EventBusSubscriber;
+@Mod(Player2ExampleMod.MODID)
 public class KeyInputHandler {
     private static boolean wasSTTKeyPressed = false; // Track previous key state
 

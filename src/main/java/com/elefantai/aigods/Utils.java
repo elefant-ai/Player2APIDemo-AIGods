@@ -5,6 +5,7 @@ import com.google.gson.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class Utils {
     /**
@@ -79,6 +80,17 @@ public class Utils {
 
         JsonArray jsonArray = element.getAsJsonArray();
         return jsonArrayToStringArray(jsonArray);
+    }
+
+    public static UUID getUUIDSafely(JsonObject input, String fieldName) {
+        if (input.has(fieldName) && !input.get(fieldName).isJsonNull()) {
+            try {
+                return UUID.fromString(input.get(fieldName).getAsString());
+            } catch (IllegalArgumentException e) {
+                System.err.println("Warning: Invalid UUID format for field '" + fieldName + "': " + e.getMessage());
+            }
+        }
+        return null;
     }
 
 
