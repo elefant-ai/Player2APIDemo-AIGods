@@ -1,11 +1,14 @@
 package com.elefantai.aigods;
 
+import com.elefantai.aigods.network.PacketHandler;
 import com.elefantai.aigods.player2api.Player2APIService;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.ServerChatEvent;
 import net.neoforged.fml.common.Mod;
@@ -49,7 +52,7 @@ public class Player2ExampleMod {
     /**
      * Registers event handlers when the mod is initialized.
      */
-    public Player2ExampleMod() {
+    public Player2ExampleMod(IEventBus modbus ) {
 
         Player2APIService.StreamEventHandler eventHandler = new Player2APIService.StreamEventHandler("ai-gods",json -> {
 
@@ -78,6 +81,9 @@ public class Player2ExampleMod {
         // Start listening
 
         NeoForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(KeyInputHandler.class);
+        modbus.register(KeyBindings.class);
+        modbus.register(PacketHandler.class);
         instance = this;
         lastHeartbeatTime = System.nanoTime();
         lastCharacterCheckTime = System.nanoTime();

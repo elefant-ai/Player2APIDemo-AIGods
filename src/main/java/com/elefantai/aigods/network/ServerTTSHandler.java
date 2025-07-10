@@ -12,6 +12,7 @@ import net.neoforged.neoforge.network.handling.ServerPayloadContext;
 import java.util.function.Supplier;
 
 public class ServerTTSHandler {
+
     public static void handleData(final SSendTTSPacket data, final IPayloadContext context) {
         // Handle on network thread
         context.enqueueWork(() -> {

@@ -13,7 +13,7 @@ public class PacketHandler {
     @SubscribeEvent
     public static void register(final RegisterPayloadHandlersEvent event){
         final PayloadRegistrar registrar = event.registrar("1");
-        registrar.playBidirectional(SSendTTSPacket.TYPE, SSendTTSPacket.STREAM_CODEC, ServerTTSHandler::handleData);
+        registrar.commonToServer(SSendTTSPacket.TYPE, SSendTTSPacket.STREAM_CODEC, ServerTTSHandler::handleData);
 
     }
 

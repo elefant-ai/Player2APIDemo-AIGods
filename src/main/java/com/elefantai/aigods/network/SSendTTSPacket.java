@@ -7,6 +7,7 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.NotNull;
 
 public record SSendTTSPacket(boolean isPressed) implements CustomPacketPayload {
     // register any data to send here as fields (as long as it is byte-convertible)
@@ -20,7 +21,7 @@ public record SSendTTSPacket(boolean isPressed) implements CustomPacketPayload {
     );
 
     @Override
-    public Type<? extends CustomPacketPayload> type() {
+    public @NotNull Type<? extends CustomPacketPayload> type() {
         return TYPE;
     }
 

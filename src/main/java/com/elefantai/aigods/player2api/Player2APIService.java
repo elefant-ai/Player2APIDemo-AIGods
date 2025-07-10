@@ -363,7 +363,22 @@ public class Player2APIService {
         requestBody.addProperty("timeout", 30);
 
         try {
-            sendRequest("/v1/stt/start", "POST", requestBody);
+
+            URL url = new URI(BASE_URL + "/v1/stt/start").toURL();
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+
+            connection.setRequestProperty("accept", "*/*");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("player2-game-key", "ai-gods");
+            connection.setDoOutput(true);
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = requestBody.toString().getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            System.out.println(connection.getResponseCode());
+
         } catch (Exception e) {
             System.err.println("Error in startSST: " + e.getMessage());
         }
@@ -373,7 +388,38 @@ public class Player2APIService {
     // todo: Add comment
     public static String stopSTT () {
         try{
-            Map<String, JsonElement> responseMap = sendRequest("/v1/stt/stop", "POST", null);
+            URL url = new URI(BASE_URL + "/v1/stt/stop").toURL();
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+
+            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+            connection.setRequestProperty("accept", "application/json; charset=utf-8");
+            connection.setRequestProperty("player2-game-key", "ai-gods");
+
+            System.out.printf("Sending %s request to %s\n", "POST", "/v1/stt/stop");
+
+
+            connection.setDoOutput(true);
+
+
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+            reader.close();
+
+            JsonObject jsonResponse = JsonParser.parseString(response.toString()).getAsJsonObject();
+            Map<String, JsonElement> responseMap = new HashMap<>();
+
+            System.out.println(jsonResponse);
+
+            for (Map.Entry<String, JsonElement> entry : jsonResponse.entrySet()) {
+                responseMap.put(entry.getKey(), entry.getValue());
+            }
+
             if(!responseMap.containsKey("text")){
                 throw new Exception("Could not find key 'text' in response");
             }

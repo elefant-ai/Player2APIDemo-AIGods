@@ -13,7 +13,7 @@ import org.lwjgl.glfw.GLFW;
 /**
  * Handles key binding registration and tick events for key press/release.
  */
-@Mod("aigods")
+@Mod(Player2ExampleMod.MODID)
 public class KeyBindings {
 
     // Create a key binding. Change the key description and category as needed.
