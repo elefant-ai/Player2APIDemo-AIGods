@@ -2,8 +2,13 @@ package com.elefantai.aigods;
 
 import com.elefantai.aigods.network.PacketHandler;
 import com.elefantai.aigods.player2api.Player2APIService;
+import com.elefantai.aigods.player2api.model.AuthResponse;
+import com.elefantai.aigods.player2api.model.StartAuth;
+import net.minecraft.Util;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
@@ -17,7 +22,10 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEven
 import com.google.gson.JsonObject;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
+import java.io.IOException;
+import java.net.URI;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Mod(Player2ExampleMod.MODID)
 public class Player2ExampleMod {
@@ -142,12 +150,34 @@ public class Player2ExampleMod {
      */
     @SubscribeEvent
     public void onPlayerLoggedInEvent(PlayerLoggedInEvent event) {
+
+
         if (event.getEntity() instanceof ServerPlayer) {
             this.player = (ServerPlayer) event.getEntity();
             MinecraftServer server = player.getServer();
+
             if (server != null) {
                 System.out.println("Setting Server");
                 Player2ExampleMod.server = server;
+
+                try {
+                    AuthResponse test = Player2APIService.startAuth(new StartAuth("01977e1d-cf15-7d58-a6e2-ef47fc3d9f30"));
+                    if (test != null && test.verificationUriComplete != null) {
+                        player.sendSystemMessage(Component.literal("Click Here").setStyle(Style.EMPTY.withClickEvent(new ClickEvent.OpenUrl(URI.create(test.verificationUriComplete)))), false);
+                    }
+
+                    CompletableFuture.runAsync(() -> {
+                        String key = Player2APIService.pollForToken("01977e1d-cf15-7d58-a6e2-ef47fc3d9f30", test);
+                        if (key != null) {
+                            Player2APIService.setApiKey(key);
+                            ClientServiceThreaded.sendGreeting(instance);
+                        }
+                    });
+
+
+                } catch (IOException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
             ClientServiceThreaded.sendGreeting(instance);
 

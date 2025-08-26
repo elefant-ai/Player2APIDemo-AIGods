@@ -1,5 +1,7 @@
 package com.elefantai.aigods;
 
+import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -10,12 +12,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-import com.elefantai.aigods.player2api.model.Function;
-import com.elefantai.aigods.player2api.model.Parameters;
-import com.elefantai.aigods.player2api.model.Property;
-import com.elefantai.aigods.player2api.model.SpawnNPC;
+import com.elefantai.aigods.player2api.model.*;
 
 import com.elefantai.aigods.player2api.Player2APIService;
+import net.minecraft.Util;
 import net.minecraft.server.MinecraftServer;
 
 public class ClientServiceThreaded {
@@ -26,6 +26,7 @@ public class ClientServiceThreaded {
                 .supplyAsync(Player2APIService::getSelectedCharacter, IO_POOL)
                 .thenApplyAsync(newChar -> {
                     Character current = mod.getCharacter();
+
                     if (current != null && current.name.equals(newChar.name)) {
                         return current;
                     }
@@ -36,6 +37,7 @@ public class ClientServiceThreaded {
                         return newChar;
                     }
                     server.execute(() -> {
+
                         mod.setCharacter(newChar);
                         if (Player2APIService.checkIfClientIdExists(newChar.id)) {
                             return;
@@ -63,11 +65,11 @@ public class ClientServiceThreaded {
                                 newChar.description,
                                 List.of(new Function("minecraft_command",
                                         "Run any Minecraft command",
-                                        new Parameters(properties, List.of("command")))),
+                                        new Parameters(properties, List.of("command")),false)),
                                 newChar.name,
                                 newChar.name,
                                 newPrompt,
-                                voiceId));
+                                voiceId, new TTS()));
                         if (newId != null) {
                             Player2APIService.setCurrentNpcId(newChar.id, newId);
                         }

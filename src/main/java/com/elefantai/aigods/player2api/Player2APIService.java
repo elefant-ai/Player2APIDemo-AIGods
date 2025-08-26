@@ -34,7 +34,11 @@ public class Player2APIService {
     @Nullable
     private static UUID currentNpcId;
 
+    private static String apiKey = "";
 
+    public static void setApiKey(String key) {
+        apiKey = key;
+    }
     private static HashMap<UUID, UUID> clientIdToNpcApiIdMap = new HashMap();
 
     public static void setCurrentNpcId(UUID clientId, UUID npcId) {
@@ -52,9 +56,75 @@ public class Player2APIService {
         }
     }
 
+    public static AuthResponse startAuth(StartAuth payload) throws IOException, InterruptedException {
+
+        String path = "/v1/login/device/new";
+        URI uri = URI.create(BASE_URL + path);
+        Gson gson = new Gson();
+
+        String json = gson.toJson(payload);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(uri)
+                .header("Content-Type", "application/json; charset=utf-8")
+                .header("accept", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+
+
+
+        HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println(response);
+        return gson.fromJson(response.body(), AuthResponse.class);
+    }
+
+    /**
+     * Polls the web API for the user's P2 key after starting the device flow.
+     * This will repeatedly call the token endpoint until a key is returned or
+     * the device code expires.
+     *
+     * @param clientId   The game client id used to start the flow.
+     * @param auth       The initial authorization response containing the device code.
+     * @return The P2 key if the user approves the request, otherwise null.
+     */
+    @Nullable
+    public static String pollForToken(String clientId, AuthResponse auth) {
+        FinishAuth payload = new FinishAuth(clientId, auth.deviceCode);
+        Gson gson = new Gson();
+        long deadline = System.currentTimeMillis() + auth.expiresIn * 1000L;
+
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                String json = gson.toJson(payload);
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(BASE_URL + "/v1/login/device/token"))
+                        .header("Content-Type", "application/json; charset=utf-8")
+                        .header("accept", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(json))
+                        .build();
+
+                HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() == 200) {
+                    AuthToken token = gson.fromJson(response.body(), AuthToken.class);
+                    return token.p2Key;
+                }
+            } catch (Exception e) {
+                System.err.println("Failed polling token: " + e.getMessage());
+            }
+
+            try {
+                Thread.sleep(auth.interval * 1000L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        return null;
+    }
+
     public static UUID spawnNpc(SpawnNPC payload) {
         try {
-            String path = "/v1/npc/games/ai-gods/npcs/spawn";
+            String path = "/v1/npcs/spawn";
             URI uri = URI.create(BASE_URL + path);
             Gson gson = new Gson();
             String json = gson.toJson(payload);
@@ -63,7 +133,7 @@ public class Player2APIService {
                     .uri(uri)
                     .header("Content-Type", "application/json; charset=utf-8")
                     .header("accept", "text/plain")
-                    .header("player2-game-key", "ai-gods")
+                    .header("Authorization", "Bearer " + apiKey)
                     .POST(HttpRequest.BodyPublishers.ofString(json))
                     .build();
 
@@ -71,10 +141,11 @@ public class Player2APIService {
                     .send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
-                throw new IOException("Unexpected status: " + response.statusCode());
+                throw new IOException("Unexpected status: " + response.statusCode() + response.body());
             }
 
-            currentNpcId = UUID.fromString(response.body().trim());
+            System.out.println(response.body().trim().replaceAll("\"", ""));
+            currentNpcId = UUID.fromString(response.body().trim().replaceAll("\"", ""));
             return UUID.fromString(response.body().trim());
         } catch (Exception e) {
             System.err.println("Failed to spawn NPC: " + e.getMessage());
@@ -119,6 +190,7 @@ public class Player2APIService {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .timeout(Duration.ofDays(10))
+                    .header("Authorization", "Bearer " + apiKey)
                     .GET()
                     .build();
 
@@ -135,6 +207,7 @@ public class Player2APIService {
                 while ((line = reader.readLine()) != null && !Thread.currentThread().isInterrupted()) {
                     if (!line.trim().isEmpty()) {
                         try {
+
                             Response jsonObject = gson.fromJson(line, Response.class);
                             onMessage.accept(jsonObject);
                         } catch (Exception e) {
@@ -183,7 +256,7 @@ public class Player2APIService {
 
         public StreamEventHandler(String gameId, Consumer<Response> onMessage) {
             this.streamListener = new JsonStreamListener(onMessage);
-            this.streamListener.startListening("http://127.0.0.1:4315/v1/npc/games/"+ gameId + "/npcs/responses");
+            this.streamListener.startListening("http://coder-bryntet-dev-2.wombat-tawny.ts.net:8090/v1/npcs/responses");
         }
 
         @SubscribeEvent
@@ -191,7 +264,7 @@ public class Player2APIService {
             streamListener.processPendingMessages();
         }
     }
-    private static final String BASE_URL = "http://127.0.0.1:4315"; // ACTUAL
+    private static final String BASE_URL = "http://coder-bryntet-dev-2.wombat-tawny.ts.net:8090"; // ACTUAL
 //    private static final String BASE_URL = "http://127.0.0.1:8080"; // PROXY
 
 
@@ -211,7 +284,7 @@ public class Player2APIService {
 
         connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
         connection.setRequestProperty("accept", "application/json; charset=utf-8");
-        connection.setRequestProperty("player2-game-key", "ai-gods");
+        connection.setRequestProperty("Authorization", "Bearer " + apiKey);
 
         System.out.printf("Sending %s request to %s\n", requestType, endpoint);
 
@@ -241,6 +314,9 @@ public class Player2APIService {
                 }
                 errorReader.close();
                 System.err.println("Error response: " + errorResponse);
+                System.err.println(endpoint);
+                System.err.println(requestBody.toString());
+
             }
             throw new IOException("HTTP " + responseCode + ": " + connection.getResponseMessage());
         }
@@ -284,16 +360,17 @@ public class Player2APIService {
         requestBody.addProperty("sender_name", senderName);
 
         if (tts) {
-            requestBody.addProperty("tts", "local_client");
+            requestBody.addProperty("tts", "server");
         }
 
         try {
-            String path = "/v1/npc/games/ai-gods/npcs/" + currentNpcId + "/chat";
+            String path = "/v1/npcs/" + currentNpcId + "/chat";
             URI uri = URI.create(BASE_URL + path);
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(uri)
                     .header("Content-Type", "application/json; charset=utf-8")
+                    .header("Authorization", "Bearer " + apiKey)
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
                     .build();
             HttpResponse<Void> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.discarding());
@@ -346,6 +423,7 @@ public class Player2APIService {
             requestBody.addProperty("play_in_app", true);
             requestBody.addProperty("speed", 1);
             requestBody.addProperty("text", message );
+            requestBody.addProperty("Authorization", "Bearer " + apiKey);
             JsonArray voiceIdsArray = new JsonArray();
             for (String voiceId : character.voiceIds) {
                 voiceIdsArray.add(voiceId);
@@ -371,6 +449,7 @@ public class Player2APIService {
             connection.setRequestProperty("accept", "*/*");
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("player2-game-key", "ai-gods");
+            connection.setRequestProperty("Authorization", "Bearer " + apiKey);
             connection.setDoOutput(true);
             try (OutputStream os = connection.getOutputStream()) {
                 byte[] input = requestBody.toString().getBytes(StandardCharsets.UTF_8);

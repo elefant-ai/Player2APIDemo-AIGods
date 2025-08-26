@@ -7,6 +7,8 @@ public class Function {
     private String name;
     private String description;
     private Parameters parameters;
+    @SerializedName("never_respond_with_message")
+    private boolean neverRespondWithMessage;
 
     // Getters and setters
     public String getName() {
@@ -14,10 +16,11 @@ public class Function {
     }
 
 
-    public Function(String name, String description, Parameters parameters) {
+    public Function(String name, String description, Parameters parameters, boolean neverRespondWithMessage) {
         this.name = name;
         this.description = description;
         this.parameters = parameters;
+        this.neverRespondWithMessage = neverRespondWithMessage;
     }
 
 

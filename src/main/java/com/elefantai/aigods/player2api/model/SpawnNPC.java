@@ -10,7 +10,7 @@ public class SpawnNPC {
     @SerializedName("character_description")
     private String characterDescription;
 
-    private List<Function> commands;
+    private List<Function> commands = List.of();
 
     private String name;
 
@@ -23,14 +23,18 @@ public class SpawnNPC {
     @SerializedName("voice_id")
     private String voiceId;
 
+    @SerializedName("tts")
+    private TTS tts;
+
     // Constructor
-    public SpawnNPC(String characterDescription, List<Function> commands, String name, String shortName, String systemPrompt, String voiceId) {
+    public SpawnNPC(String characterDescription, List<Function> commands, String name, String shortName, String systemPrompt, String voiceId, TTS tts) {
         this.characterDescription = characterDescription;
         this.commands = commands;
         this.name = name;
         this.shortName = shortName;
         this.systemPrompt = systemPrompt;
         this.voiceId = voiceId;
+        this.tts = tts;
     }
 
     // Getters and setters
